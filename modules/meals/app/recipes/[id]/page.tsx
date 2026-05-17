@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/db"
 import { recipes, cookSessions } from "@/db/schema"
 import type { Ingredient, Step } from "@/db/schema"

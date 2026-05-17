@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getSuggestions } from "@/lib/suggest"
 import Link from "next/link"
 
