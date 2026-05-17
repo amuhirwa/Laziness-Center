@@ -1,13 +1,19 @@
 {
-    email admin@lazy.lovey.tv
+    # TLS is terminated by nginx upstream — Caddy serves plain HTTP only.
+    auto_https off
+    # Trust the loopback so X-Forwarded-For/Proto headers from nginx are honoured.
+    servers {
+        trusted_proxies static 127.0.0.1
+    }
 }
 
-lazy.lovey.tv {
-    # Internal API — Docker-network only; never exposed publicly
+http://lazy.lovey.tv {
+    # Internal API — Docker-network only; belt-and-suspenders block even though
+    # nginx never proxies /internal/* to us.
     @internal path /internal/*
     respond @internal 403
 
-    # proxy_subpath modules — Next.js apps use basePath, so no prefix stripping needed
+    # proxy_subpath modules — Next.js apps use basePath, no prefix stripping needed
     handle /meals* {
         reverse_proxy meals:3000
     }
@@ -16,7 +22,7 @@ lazy.lovey.tv {
         reverse_proxy pantry:3000
     }
 
-    # Manhwa (Python FastAPI — strips prefix; FastAPI uses root_path env var)
+    # Manhwa (Python FastAPI) — Caddy strips prefix; FastAPI uses root_path env var
     handle /manhwa* {
         uri strip_prefix /manhwa
         reverse_proxy manhwa:8000
@@ -25,6 +31,6 @@ lazy.lovey.tv {
     reverse_proxy center:3000
 }
 
-auth.lazy.lovey.tv {
+http://auth.lazy.lovey.tv {
     reverse_proxy pocket-id:1411
 }

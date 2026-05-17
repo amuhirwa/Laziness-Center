@@ -1,6 +1,6 @@
 import Redis from "ioredis"
-import { importJWK, jwtVerify } from "jose"
-import { LCError } from "./error.js"
+import { importJWK, jwtVerify, type JWK } from "jose"
+import { LCError } from "./error"
 import type {
   CallOptions,
   EventHandler,
@@ -9,7 +9,7 @@ import type {
   Logger,
   PublishOptions,
   SubscribeOptions,
-} from "./types.js"
+} from "./types"
 
 const DEFAULT_TIMEOUT_MS = 3000
 const DEFAULT_CACHE_TTL_S = 60
@@ -260,7 +260,8 @@ export class LCClient {
             } else {
               // Check delivery count — move to DLQ after maxRetries
               const pending = await redis.xpending(streamKey, groupName, messageId, messageId, 1) as unknown[]
-              const deliveryCount = pending?.[0]?.[3] as number | undefined
+              const pendingEntry = pending?.[0] as unknown[] | undefined
+              const deliveryCount = pendingEntry?.[3] as number | undefined
               if (deliveryCount && deliveryCount >= maxRetries) {
                 await redis.xadd(dlqKey, "*", "stream", streamKey, "messageId", messageId, "payload", fields[payloadIdx + 1])
                 await redis.xack(streamKey, groupName, messageId)
@@ -317,7 +318,7 @@ export class LCClient {
     try {
       const res = await fetch(`${this.centerUrl}/internal/jwks`)
       if (!res.ok) return null
-      const jwk = (await res.json()) as Record<string, unknown>
+      const jwk = (await res.json()) as JWK
       this._publicKey = (await importJWK(jwk, "RS256")) as CryptoKey
       return this._publicKey
     } catch {

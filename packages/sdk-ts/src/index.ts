@@ -1,10 +1,11 @@
-export { LCClient } from "./client.js"
-export { LCError } from "./error.js"
+export { LCClient } from "./client"
+export { LCError } from "./error"
 export type {
   LCClientOptions,
   CallOptions,
   PublishOptions,
+  SubscribeOptions,
   LCEvent,
   EventHandler,
   Logger,
-} from "./types.js"
+} from "./types"

@@ -3,9 +3,9 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      # Binds to loopback only — nginx (host) terminates TLS and proxies here.
+      # Caddy serves plain HTTP; TLS is handled upstream by nginx + certbot.
+      - "127.0.0.1:8080:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -14,7 +14,7 @@ services:
       - laziness
 
   pocket-id:
-    image: stonith404/pocket-id:latest
+    image: ghcr.io/pocket-id/pocket-id:v2
     restart: unless-stopped
     environment:
       PUBLIC_APP_URL: "https://auth.lazy.lovey.tv"

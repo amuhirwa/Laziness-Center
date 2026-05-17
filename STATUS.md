@@ -2,16 +2,88 @@
 
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
-**Last updated:** 2026-05-17
-**Updated by:** Claude Code — Phase 7 implementation
+**Last updated:** 2026-05-18
+**Updated by:** Claude Code — deployment topology + build fixes
 
 ---
 
 ## Current Phase
 
-**Phase 7 — Polish (code complete, pending first deploy)**
+**Phase 7 — Polish (code complete, deploying)**
 
-All phases through 7 are written. Nothing deployed yet. Deploy is the immediate next step.
+All phases through 7 are written. Stack is in active first-deploy iteration.
+
+## Deployment topology
+
+```
+Internet → nginx (host, :443, TLS via certbot)
+             ↓ proxy_pass http://127.0.0.1:8080
+           Caddy (container, 127.0.0.1:8080, plain HTTP, auto_https off)
+             ↓ reverse_proxy by path
+           modules (center:3000, meals:3000, pantry:3000, manhwa:8000, pocket-id:1411)
+```
+
+nginx is already running on this VPS (serving isonga.makhax.com). Caddy is NOT the outermost TLS terminator — it serves plain HTTP on loopback only. nginx terminates TLS via certbot certs.
+
+**Implication for forward-auth:** when forward-auth wiring is added (user identity headers for modules), the outermost auth gate will sit in nginx or Pocket-ID, not Caddy. Caddy's `trusted_proxies static 127.0.0.1` ensures X-Forwarded-* headers from nginx are honoured.
+
+## nginx setup (one-time, outside docker-compose)
+
+Run on the VPS after the Laziness Center stack is up:
+
+```bash
+# Get certs (nginx must already be running)
+sudo certbot certonly --nginx -d lazy.lovey.tv -d auth.lazy.lovey.tv
+```
+
+Create `/etc/nginx/sites-available/laziness`:
+
+```nginx
+# Redirect HTTP → HTTPS
+server {
+    listen 80;
+    server_name lazy.lovey.tv auth.lazy.lovey.tv;
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS — proxy to Caddy
+server {
+    listen 443 ssl;
+    server_name lazy.lovey.tv auth.lazy.lovey.tv;
+
+    ssl_certificate     /etc/letsencrypt/live/lazy.lovey.tv/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/lazy.lovey.tv/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Pass the original host so Caddy can route auth.* vs lazy.* correctly
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+
+    # WebSocket support (needed for some Next.js dev features; harmless in prod)
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+
+# Required for the Upgrade header map above
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+Enable and reload:
+```bash
+sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
 
 ## Last Session Summary (Phase 7 + housekeeping)
 

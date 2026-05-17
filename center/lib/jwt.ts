@@ -4,10 +4,11 @@ import {
   importJWK,
   importPKCS8,
   SignJWT,
-  type CryptoKeyPair,
+  type JWK,
 } from "jose"
 
-type KeySet = { privateKey: CryptoKey; publicKey: CryptoKey; publicJwk: JsonWebKey }
+// CryptoKeyPair is a Web Crypto global — not re-exported by jose
+type KeySet = { privateKey: CryptoKey; publicKey: CryptoKey; publicJwk: JWK }
 
 let _keyPairPromise: Promise<KeySet> | null = null
 
@@ -19,10 +20,11 @@ function getKeyPair(): Promise<KeySet> {
       // Persistent key — survives Center restarts. Tokens minted before a restart
       // remain valid for their 5-minute TTL.
       _keyPairPromise = (async (): Promise<KeySet> => {
-        const privateKey = await importPKCS8(pem, "RS256")
-        // Derive public key: export private JWK (contains public params n+e), strip private params
+        const privateKey = (await importPKCS8(pem, "RS256")) as CryptoKey
         const privateJwk = await exportJWK(privateKey)
-        const publicJwk: JsonWebKey = { kty: privateJwk.kty, n: privateJwk.n, e: privateJwk.e }
+        // Destructure out private-key-only fields; remainder is a valid public JWK
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { d, p, q, dp, dq, qi, ...publicJwk } = privateJwk
         const publicKey = (await importJWK(publicJwk, "RS256")) as CryptoKey
         return { privateKey, publicKey, publicJwk }
       })()
@@ -32,8 +34,8 @@ function getKeyPair(): Promise<KeySet> {
       // Set CENTER_JWT_PRIVATE_KEY in .env to avoid this.
       _keyPairPromise = generateKeyPair("RS256", { extractable: true }).then(
         async ({ privateKey, publicKey }) => ({
-          privateKey,
-          publicKey,
+          privateKey: privateKey as CryptoKey,
+          publicKey: publicKey as CryptoKey,
           publicJwk: await exportJWK(publicKey),
         })
       )
@@ -57,7 +59,7 @@ export async function mintServiceToken(caller: string, target: string): Promise<
 }
 
 /** JWK representation of the public key — served to modules for local verification. */
-export async function getPublicJwk(): Promise<JsonWebKey> {
+export async function getPublicJwk(): Promise<JWK> {
   const { publicJwk } = await getKeyPair()
   return publicJwk
 }

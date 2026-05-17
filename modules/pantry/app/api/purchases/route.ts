@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { sql } from "drizzle-orm"
 import { db } from "@/db"
 import { inventory, purchases } from "@/db/schema"
 import { lc } from "@/lib/sdk"
@@ -29,16 +30,21 @@ export async function POST(request: NextRequest) {
     userId: DEFAULT_USER,
   }).returning({ id: purchases.id })
 
-  // Upsert inventory: add purchased quantities
+  // Upsert inventory: create row or add to existing quantity
   for (const item of body.items) {
     const norm = normalizeIngredient(item.name)
-    await db.execute(
-      `INSERT INTO inventory (name_normalized, name_display, quantity, unit)
-       VALUES ('${norm}', '${item.name}', ${item.quantity}, '${item.unit}')
-       ON CONFLICT (name_normalized) DO UPDATE SET
-         quantity     = inventory.quantity + ${item.quantity},
-         last_updated = NOW()`
-    )
+    await db.insert(inventory).values({
+      nameNormalized: norm,
+      nameDisplay: item.name,
+      quantity: String(item.quantity),
+      unit: item.unit,
+    }).onConflictDoUpdate({
+      target: inventory.nameNormalized,
+      set: {
+        quantity: sql`${inventory.quantity} + ${String(item.quantity)}`,
+        lastUpdated: new Date(),
+      },
+    })
   }
 
   // Publish events
