@@ -16,10 +16,11 @@ services:
     image: ghcr.io/pocket-id/pocket-id:v2
     restart: unless-stopped
     environment:
+      # v2 uses APP_URL (not PUBLIC_APP_URL) for WebAuthn RP ID computation
+      APP_URL: "https://auth.lazy.lovey.tv"
+      # Keep PUBLIC_APP_URL for any v1 compat paths still present
       PUBLIC_APP_URL: "https://auth.lazy.lovey.tv"
       TRUST_PROXY: "true"
-      # Required by Pocket-ID v2 — must be at least 16 chars
-      # Generate: openssl rand -hex 16
       ENCRYPTION_KEY: "${POCKET_ID_ENCRYPTION_KEY}"
     volumes:
       - pocket_id_data:/app/data
