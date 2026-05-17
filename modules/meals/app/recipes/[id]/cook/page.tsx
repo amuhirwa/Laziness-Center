@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { use, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 type SessionState =
@@ -10,7 +10,8 @@ type SessionState =
   | { phase: "done"; actualMinutes: number }
   | { phase: "error"; message: string }
 
-export default function CookModePage({ params }: { params: { id: string } }) {
+export default function CookModePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const searchParams = useSearchParams()
   const existingSessionId = searchParams.get("session")
@@ -27,10 +28,10 @@ export default function CookModePage({ params }: { params: { id: string } }) {
       try {
         if (existingSessionId) {
           // Resumed session — fetch recipe steps via existing session check
-          const res = await fetch(`/meals/api/cook-sessions?recipeId=${params.id}`)
+          const res = await fetch(`/meals/api/cook-sessions?recipeId=${id}`)
           const data = await res.json() as { session: { id: string; startedAt: string; servings: number } | null }
           if (data.session) {
-            const stepsRes = await fetch(`/meals/api/recipes/${params.id}`)
+            const stepsRes = await fetch(`/meals/api/recipes/${id}`)
             const recipeData = await stepsRes.json() as { steps: Array<{ text: string; durationMinutes?: number }> }
             const startedAt = new Date(data.session.startedAt).getTime()
             setState({ phase: "active", sessionId: data.session.id, startedAt, steps: recipeData.steps ?? [] })
@@ -44,12 +45,12 @@ export default function CookModePage({ params }: { params: { id: string } }) {
         const res = await fetch("/meals/api/cook-sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipeId: params.id }),
+          body: JSON.stringify({ recipeId: id }),
         })
 
         if (res.status === 409) {
           const body = await res.json() as { existingSessionId: string }
-          router.replace(`/meals/recipes/${params.id}/cook?session=${body.existingSessionId}`)
+          router.replace(`/meals/recipes/${id}/cook?session=${body.existingSessionId}`)
           return
         }
 
@@ -75,7 +76,7 @@ export default function CookModePage({ params }: { params: { id: string } }) {
     }
 
     init()
-  }, [params.id, existingSessionId, router])
+  }, [id, existingSessionId, router])
 
   // Elapsed timer
   useEffect(() => {
