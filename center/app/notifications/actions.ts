@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache"
 export async function markAllRead(userId: string) {
   await db
     .update(notifications)
-    .set({ readAt: new Date() })
-    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+    .set({ read_at: new Date() })
+    .where(and(eq(notifications.user_id, userId), isNull(notifications.read_at)))
   revalidatePath("/notifications")
 }

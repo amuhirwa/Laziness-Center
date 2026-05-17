@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
 
   const [note] = await db.insert(notifications).values({
     id: crypto.randomUUID(),
-    userId: body.userId ?? "default",
-    sourceModule: result.caller,
+    user_id: body.userId ?? "default",
+    source_module: result.caller,
     title: body.title,
     body: body.body,
     link: body.link,

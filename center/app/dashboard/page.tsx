@@ -51,7 +51,7 @@ export default async function DashboardPage() {
   const unreadCount = await db
     .select({ id: notifications.id })
     .from(notifications)
-    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+    .where(and(eq(notifications.user_id, userId), isNull(notifications.read_at)))
     .then((r) => r.length)
 
   // 1. Collect all (module, widget) pairs from enabled modules

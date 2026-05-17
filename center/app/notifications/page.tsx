@@ -1,9 +1,11 @@
+export const dynamic = "force-dynamic"
+
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { db } from "@/db"
 import { notifications } from "@/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { markAllRead } from "./actions"
 
 export default async function NotificationsPage() {
@@ -15,11 +17,11 @@ export default async function NotificationsPage() {
   const items = await db
     .select()
     .from(notifications)
-    .where(eq(notifications.userId, userId))
-    .orderBy(desc(notifications.createdAt))
+    .where(eq(notifications.user_id, userId))
+    .orderBy(desc(notifications.created_at))
     .limit(50)
 
-  const unread = items.filter((n) => !n.readAt).length
+  const unread = items.filter((n) => !n.read_at).length
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -54,19 +56,19 @@ export default async function NotificationsPage() {
               <li
                 key={n.id}
                 className={`flex items-start gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  n.readAt ? "opacity-50" : "bg-neutral-900"
+                  n.read_at ? "opacity-50" : "bg-neutral-900"
                 }`}
               >
                 <span
                   className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
-                    n.readAt ? "bg-neutral-700" : "bg-blue-500"
+                    n.read_at ? "bg-neutral-700" : "bg-blue-500"
                   }`}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium text-neutral-200">{n.title}</span>
                     <span className="text-xs text-neutral-600 shrink-0">
-                      {new Date(n.createdAt).toLocaleString([], {
+                      {new Date(n.created_at).toLocaleString([], {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -76,8 +78,8 @@ export default async function NotificationsPage() {
                   </div>
                   <p className="text-sm text-neutral-400 mt-0.5">{n.body}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    {n.sourceModule && (
-                      <span className="text-xs text-neutral-600">from {n.sourceModule}</span>
+                    {n.source_module && (
+                      <span className="text-xs text-neutral-600">from {n.source_module}</span>
                     )}
                     {n.link && (
                       <Link
@@ -89,7 +91,7 @@ export default async function NotificationsPage() {
                     )}
                   </div>
                 </div>
-                {!n.readAt && (
+                {!n.read_at && (
                   <form action={`/api/notify/${n.id}/read`} method="POST" className="shrink-0">
                     <button
                       type="submit"

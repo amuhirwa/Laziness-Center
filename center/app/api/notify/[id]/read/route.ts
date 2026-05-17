@@ -14,7 +14,7 @@ export async function POST(
   const { id } = await params
   await db
     .update(notifications)
-    .set({ readAt: new Date() })
+    .set({ read_at: new Date() })
     .where(eq(notifications.id, id))
 
   return new NextResponse(null, { status: 204 })
