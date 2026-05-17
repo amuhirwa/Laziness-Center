@@ -165,7 +165,7 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
-      {state.phase === "active" && (
+      {(state.phase === "active" || state.phase === "finishing") && (
         <div className="space-y-4 pt-4 border-t border-neutral-800">
           <div className="flex gap-3 items-center">
             <span className="text-sm text-neutral-400">Rating:</span>
@@ -183,14 +183,22 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
             className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500 resize-none"
           />
           <div className="flex gap-3">
-            <button onClick={handleFinish} disabled={state.phase === "finishing"}
-              className="px-6 py-2.5 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-40">
-              {state.phase === "finishing" ? "Saving…" : "Finish cooking"}
-            </button>
-            <button onClick={handleCancel}
-              className="px-4 py-2.5 text-sm text-neutral-500 hover:text-neutral-100">
-              Cancel
-            </button>
+            {/* isFinishing is a plain boolean — avoids comparing a narrowed discriminant */}
+            {(() => {
+              const isFinishing = state.phase === "finishing"
+              return (
+                <>
+                  <button onClick={handleFinish} disabled={isFinishing}
+                    className="px-6 py-2.5 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-40">
+                    {isFinishing ? "Saving…" : "Finish cooking"}
+                  </button>
+                  <button onClick={handleCancel} disabled={isFinishing}
+                    className="px-4 py-2.5 text-sm text-neutral-500 hover:text-neutral-100 disabled:opacity-40">
+                    Cancel
+                  </button>
+                </>
+              )
+            })()}
           </div>
         </div>
       )}
