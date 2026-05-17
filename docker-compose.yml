@@ -4,7 +4,6 @@ services:
     restart: unless-stopped
     ports:
       # Binds to loopback only — nginx (host) terminates TLS and proxies here.
-      # Caddy serves plain HTTP; TLS is handled upstream by nginx + certbot.
       - "127.0.0.1:8080:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -19,6 +18,9 @@ services:
     environment:
       PUBLIC_APP_URL: "https://auth.lazy.lovey.tv"
       TRUST_PROXY: "true"
+      # Required by Pocket-ID v2 — must be at least 16 chars
+      # Generate: openssl rand -hex 16
+      ENCRYPTION_KEY: "${POCKET_ID_ENCRYPTION_KEY}"
     volumes:
       - pocket_id_data:/app/data
     networks:
@@ -31,7 +33,6 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
-      # Built from parts so CENTER_DB_PASSWORD is the single source of truth
       DATABASE_URL: "postgresql://center:${CENTER_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dcenter"
     depends_on:
       - postgres
@@ -82,7 +83,12 @@ services:
       context: ./modules/manhwa
     restart: unless-stopped
     environment:
-      DATABASE_URL: "postgresql://manhwa:${MANHWA_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dmanhwa"
+      # Pass DB credentials as separate vars — avoids URL-encoding issues
+      # when passwords contain base64 special chars (/, +, =)
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: laziness
+      MANHWA_DB_PASSWORD: "${MANHWA_DB_PASSWORD}"
       CENTER_INTERNAL_URL: "http://center:3000"
       MANHWA_DEFAULT_USER: "${MANHWA_DEFAULT_USER}"
       MANHWA_ROOT_PATH: "/manhwa"

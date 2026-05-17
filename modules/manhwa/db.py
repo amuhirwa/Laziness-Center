@@ -7,7 +7,18 @@ _pool: asyncpg.Pool | None = None
 async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
-        _pool = await asyncpg.create_pool(os.environ["DATABASE_URL"], min_size=2, max_size=10)
+        # Use keyword args — avoids URL parsing which breaks when passwords
+        # contain base64 special characters (/, +, =) from openssl rand -base64.
+        _pool = await asyncpg.create_pool(
+            host=os.environ.get("DB_HOST", "postgres"),
+            port=int(os.environ.get("DB_PORT", "5432")),
+            user="manhwa",
+            password=os.environ["MANHWA_DB_PASSWORD"],
+            database=os.environ.get("DB_NAME", "laziness"),
+            server_settings={"search_path": "manhwa"},
+            min_size=2,
+            max_size=10,
+        )
     return _pool
 
 
