@@ -1,0 +1,30 @@
+{
+    email admin@lazy.lovey.tv
+}
+
+lazy.lovey.tv {
+    # Internal API — Docker-network only; never exposed publicly
+    @internal path /internal/*
+    respond @internal 403
+
+    # proxy_subpath modules — Next.js apps use basePath, so no prefix stripping needed
+    handle /meals* {
+        reverse_proxy meals:3000
+    }
+
+    handle /pantry* {
+        reverse_proxy pantry:3000
+    }
+
+    # Manhwa (Python FastAPI — strips prefix; FastAPI uses root_path env var)
+    handle /manhwa* {
+        uri strip_prefix /manhwa
+        reverse_proxy manhwa:8000
+    }
+
+    reverse_proxy center:3000
+}
+
+auth.lazy.lovey.tv {
+    reverse_proxy pocket-id:1411
+}

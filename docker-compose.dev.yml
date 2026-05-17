@@ -1,0 +1,45 @@
+# Local development infrastructure only.
+# The apps (Center, manhwa) run natively with hot reload — not here.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   cd center && npm run dev            # http://localhost:3000
+#   cd modules/manhwa && uvicorn main:app --reload --port 8001
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: laziness
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword
+      CENTER_DB_PASSWORD: devpassword
+      MANHWA_DB_PASSWORD: devpassword
+    volumes:
+      - ./infra/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass devpassword
+
+  pocket-id:
+    image: stonith404/pocket-id:latest
+    restart: unless-stopped
+    ports:
+      - "1411:1411"
+    environment:
+      PUBLIC_APP_URL: "http://localhost:1411"
+      TRUST_PROXY: "true"
+    volumes:
+      - pocket_id_dev_data:/app/data
+
+volumes:
+  postgres_dev_data:
+  pocket_id_dev_data:

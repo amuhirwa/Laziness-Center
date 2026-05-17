@@ -1,0 +1,127 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - laziness
+
+  pocket-id:
+    image: stonith404/pocket-id:latest
+    restart: unless-stopped
+    environment:
+      PUBLIC_APP_URL: "https://auth.lazy.lovey.tv"
+      TRUST_PROXY: "true"
+    volumes:
+      - pocket_id_data:/app/data
+    networks:
+      - laziness
+
+  center:
+    build:
+      context: ./center
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+      - pocket-id
+    networks:
+      - laziness
+
+  meals:
+    build:
+      context: .
+      dockerfile: modules/meals/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://meals:${MEALS_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dmeals"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      CENTER_INTERNAL_URL: "http://center:3000"
+      MEALS_DEFAULT_USER: "${MEALS_DEFAULT_USER}"
+      MEALS_RECENT_COOK_DAYS: "7"
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+      - center
+    networks:
+      - laziness
+
+  pantry:
+    build:
+      context: .
+      dockerfile: modules/pantry/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://pantry:${PANTRY_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dpantry"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      CENTER_INTERNAL_URL: "http://center:3000"
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+      - center
+    networks:
+      - laziness
+
+  manhwa:
+    build:
+      context: ./modules/manhwa
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://manhwa:${MANHWA_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dmanhwa"
+      CENTER_INTERNAL_URL: "http://center:3000"
+      MANHWA_DEFAULT_USER: "${MANHWA_DEFAULT_USER}"
+      MANHWA_ROOT_PATH: "/manhwa"
+    depends_on:
+      - postgres
+      - center
+    networks:
+      - laziness
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: laziness
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      CENTER_DB_PASSWORD: "${CENTER_DB_PASSWORD}"
+      MANHWA_DB_PASSWORD: "${MANHWA_DB_PASSWORD}"
+      MEALS_DB_PASSWORD: "${MEALS_DB_PASSWORD}"
+      PANTRY_DB_PASSWORD: "${PANTRY_DB_PASSWORD}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    networks:
+      - laziness
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - laziness
+
+networks:
+  laziness:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pocket_id_data:
+  postgres_data:
+  redis_data:

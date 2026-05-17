@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Browse Manhwa{% endblock %}
+
+{% block content %}
+
+{# ── Filter form ─────────────────────────────────────────────────────────── #}
+<form method="GET" action="{{ request.url_for('index') }}"
+      class="mb-6 flex flex-wrap gap-3 items-end text-sm">
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs text-neutral-500">Genres</label>
+    <input name="genres" value="{{ genres }}"
+           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
+                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-44">
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs text-neutral-500">Exclude</label>
+    <input name="excluded_genres" value="{{ excluded_genres }}"
+           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
+                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-52">
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs text-neutral-500">Min rating</label>
+    <input name="min_rating" type="number" step="0.1" min="0" max="10"
+           value="{{ min_rating }}"
+           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
+                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-24">
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs text-neutral-500">From year</label>
+    <input name="start_year" type="number" min="2000" max="2030"
+           value="{{ start_year }}"
+           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
+                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-24">
+  </div>
+
+  <button type="submit"
+          class="px-4 py-2 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium
+                 hover:bg-white transition-colors">
+    Search
+  </button>
+</form>
+
+{# ── Status bar ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-4 text-xs text-neutral-500">
+  <span>{{ titles | length }} result{% if titles | length != 1 %}s{% endif %}</span>
+  {% if stale %}
+    <span class="text-yellow-600">Showing cached results · refreshing in background</span>
+  {% endif %}
+</div>
+
+{# ── Results ─────────────────────────────────────────────────────────────── #}
+{% if not titles %}
+  <p class="text-sm text-neutral-500">
+    No results.
+    {% if not stale %}Try adjusting your filters.{% endif %}
+  </p>
+{% else %}
+  <div class="space-y-px">
+    {# Header row #}
+    <div class="hidden sm:grid grid-cols-[1fr_auto_auto_auto_140px] gap-4 px-4 py-2
+                text-xs text-neutral-600 uppercase tracking-wide border-b border-neutral-800">
+      <span>Title</span>
+      <span class="text-right w-10">Year</span>
+      <span class="text-right w-12">Rating</span>
+      <span class="text-right w-32">Genres</span>
+      <span></span>
+    </div>
+
+    {% for t in titles %}
+    <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto_140px] gap-2 sm:gap-4
+                items-center px-4 py-3 border-b border-neutral-800 hover:bg-neutral-900
+                transition-colors">
+
+      {# Title #}
+      <a href="{{ t.mu_url }}" target="_blank" rel="noopener noreferrer"
+         class="text-sm font-medium text-neutral-100 hover:text-white truncate">
+        {{ t.title }}
+        <span class="text-neutral-700 text-xs">↗</span>
+      </a>
+
+      {# Year #}
+      <span class="text-xs text-neutral-500 sm:text-right sm:w-10">
+        {{ t.year or "—" }}
+      </span>
+
+      {# Rating #}
+      <span class="text-sm font-mono sm:text-right sm:w-12
+                   {% if t.site_rating and t.site_rating >= 8 %}text-green-400
+                   {% elif t.site_rating and t.site_rating >= 7 %}text-neutral-300
+                   {% else %}text-neutral-500{% endif %}">
+        {{ "%.2f"|format(t.site_rating) if t.site_rating else "—" }}
+      </span>
+
+      {# Genres #}
+      <span class="text-xs text-neutral-600 truncate sm:w-32 sm:text-right">
+        {{ t.genres | join(", ") if t.genres else "—" }}
+      </span>
+
+      {# Add-to-list action #}
+      <div class="sm:w-[140px]">
+        {% if t.mu_id in in_list %}
+          <span class="text-xs px-2 py-1 rounded-md bg-neutral-800 text-neutral-400
+                       capitalize">{{ in_list[t.mu_id] }}</span>
+        {% else %}
+          <form method="POST" action="{{ request.url_for('add_to_list') }}"
+                class="flex gap-1">
+            <input type="hidden" name="mu_id" value="{{ t.mu_id }}">
+            <select name="status"
+                    class="bg-neutral-900 border border-neutral-700 rounded-md px-2 py-1
+                           text-xs text-neutral-300 focus:outline-none">
+              <option value="want">Want</option>
+              <option value="reading">Reading</option>
+            </select>
+            <button type="submit"
+                    class="px-2 py-1 text-xs rounded-md bg-neutral-800 text-neutral-300
+                           hover:bg-neutral-700 hover:text-white transition-colors">
+              +
+            </button>
+          </form>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}

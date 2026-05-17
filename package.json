@@ -1,0 +1,10 @@
+{
+  "name": "laziness-center",
+  "private": true,
+  "workspaces": [
+    "packages/sdk-ts",
+    "center",
+    "modules/meals",
+    "modules/pantry"
+  ]
+}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Manhwa{% endblock %} — Laziness Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/chrome/topbar.js" defer></script>
+  <style>
+    /* Center design tokens */
+    :root {
+      --lc-bg:      #0a0a0a;
+      --lc-surface: #171717;
+      --lc-border:  #262626;
+      --lc-text:    #f5f5f5;
+      --lc-muted:   #737373;
+    }
+    body { background: var(--lc-bg); color: var(--lc-text); }
+    /* Tailwind dark-mode via class not needed — we're always dark */
+  </style>
+</head>
+<body class="min-h-screen antialiased font-sans">
+
+  <header class="border-b border-neutral-800 px-4 py-3 flex items-center justify-between">
+    <nav class="flex items-center gap-5 text-sm">
+      <span class="font-semibold text-neutral-100">Manhwa</span>
+      <a href="{{ request.url_for('index') }}"
+         class="text-neutral-400 hover:text-neutral-100 transition-colors">Browse</a>
+      <a href="{{ request.url_for('reading_list') }}"
+         class="text-neutral-400 hover:text-neutral-100 transition-colors">My List</a>
+    </nav>
+  </header>
+
+  <main class="px-4 py-6 max-w-5xl mx-auto">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

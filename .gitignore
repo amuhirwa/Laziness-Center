@@ -1,0 +1,19 @@
+# Secrets — never commit these
+.env
+.env.local
+secrets/*.yml
+secrets/*.yaml
+!secrets/*.sops.yml
+!secrets/*.sops.yaml
+
+# Node / Next.js
+center/node_modules/
+center/.next/
+center/.turbo/
+
+# Docker persisted volumes (if mounted locally)
+data/
+
+# OS
+.DS_Store
+Thumbs.db

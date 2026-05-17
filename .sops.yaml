@@ -1,0 +1,12 @@
+# SOPS encryption config.
+# Replace the placeholder below with your age public key.
+# Generate a key with: age-keygen -o ~/.config/sops/age/keys.txt
+# Print your public key with: age-keygen -y ~/.config/sops/age/keys.txt
+#
+# To encrypt: sops -e secrets/.env.dec > secrets/.env.sops.yml
+# To decrypt: sops -d secrets/.env.sops.yml > secrets/.env.dec
+
+creation_rules:
+  - path_regex: secrets/.*\.sops\.(yml|yaml)$
+    age: >-
+      age1REPLACEME
