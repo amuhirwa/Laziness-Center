@@ -22,18 +22,23 @@
     style.textContent = `
       #lc-bar {
         position: fixed; top: 0; left: 0; right: 0; height: 44px;
-        background: #0a0a0a; border-bottom: 1px solid #262626;
+        background: #fafafa;
+        border-bottom: 1px solid #e5e5e5;
         display: flex; align-items: center; z-index: 9999;
         font-family: system-ui, -apple-system, sans-serif; font-size: 13px;
-        color: #f5f5f5;
+        color: #171717;
+      }
+      @media (prefers-color-scheme: dark) {
+        #lc-bar { background: #0a0a0a; border-bottom-color: #262626; color: #f5f5f5; }
       }
       #lc-bar a { color: inherit; text-decoration: none; }
       #lc-home {
         padding: 0 14px; height: 100%; display: flex; align-items: center;
-        font-weight: 600; border-right: 1px solid #262626;
+        font-weight: 600; border-right: 1px solid #e5e5e5;
         white-space: nowrap; flex-shrink: 0;
       }
-      #lc-home:hover { color: #fff; }
+      @media (prefers-color-scheme: dark) { #lc-home { border-right-color: #262626; } }
+      #lc-home:hover { opacity: 0.8; }
       #lc-modules {
         display: flex; align-items: center; flex: 1;
         overflow-x: auto; scrollbar-width: none; padding: 0 4px; height: 100%;
@@ -41,10 +46,15 @@
       #lc-modules::-webkit-scrollbar { display: none; }
       .lc-mod {
         padding: 0 10px; height: 100%; display: flex; align-items: center;
-        color: #525252; white-space: nowrap; transition: color 0.12s; flex-shrink: 0;
+        color: #737373; white-space: nowrap; transition: color 0.12s; flex-shrink: 0;
       }
-      .lc-mod:hover { color: #e5e5e5; }
-      .lc-mod.lc-active { color: #f5f5f5; font-weight: 500; }
+      .lc-mod:hover { color: #171717; }
+      .lc-mod.lc-active { color: #171717; font-weight: 500; }
+      @media (prefers-color-scheme: dark) {
+        .lc-mod { color: #525252; }
+        .lc-mod:hover { color: #e5e5e5; }
+        .lc-mod.lc-active { color: #f5f5f5; }
+      }
     `
     document.head.appendChild(style)
     document.body.style.paddingTop = "44px"

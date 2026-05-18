@@ -7,13 +7,16 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "LC",
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0a0a0a" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -25,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/chrome/icon.svg" />
       </head>
-      <body className="bg-neutral-950 text-neutral-100 min-h-screen antialiased font-sans">
+      <body className="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen antialiased font-sans">
         {children}
       </body>
     </html>

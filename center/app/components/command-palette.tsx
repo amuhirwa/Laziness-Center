@@ -85,7 +85,7 @@ export function CommandPalette() {
     >
       {/* Panel */}
       <div
-        className="w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Input */}
@@ -107,14 +107,14 @@ export function CommandPalette() {
             }
           }}
           placeholder="Go to module…"
-          className="w-full bg-transparent px-4 py-4 text-sm text-neutral-100
-                     placeholder-neutral-600 border-b border-neutral-800 focus:outline-none"
+          className="w-full bg-transparent px-4 py-4 text-sm text-neutral-900 dark:text-neutral-100
+                     placeholder-neutral-400 dark:placeholder-neutral-600 border-b border-neutral-200 dark:border-neutral-800 focus:outline-none"
         />
 
         {/* Results */}
         <ul className="max-h-60 overflow-y-auto py-1">
           {filtered.length === 0 && (
-            <li className="px-4 py-3 text-sm text-neutral-600">
+            <li className="px-4 py-3 text-sm text-neutral-500">
               {query ? "No modules match." : "No modules registered."}
             </li>
           )}
@@ -125,17 +125,17 @@ export function CommandPalette() {
               className={`flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer
                           text-sm transition-colors select-none ${
                 i === selected
-                  ? "bg-neutral-800 text-neutral-100"
-                  : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                  : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
               }`}
             >
               <div className="min-w-0">
                 <div className="font-medium">{m.name}</div>
                 {m.description && (
-                  <div className="text-xs text-neutral-600 truncate">{m.description}</div>
+                  <div className="text-xs text-neutral-500 truncate">{m.description}</div>
                 )}
               </div>
-              <span className="text-xs text-neutral-700 shrink-0 font-mono">
+              <span className="text-xs text-neutral-400 dark:text-neutral-700 shrink-0 font-mono">
                 {m.type === "linked" ? "↗" : m.type}
               </span>
             </li>
@@ -143,7 +143,7 @@ export function CommandPalette() {
         </ul>
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-neutral-800 text-xs text-neutral-700 flex gap-4">
+        <div className="px-4 py-2 border-t border-neutral-200 dark:border-neutral-800 text-xs text-neutral-400 dark:text-neutral-700 flex gap-4">
           <span>↵ open</span>
           <span>↑↓ navigate</span>
           <span>esc close</span>

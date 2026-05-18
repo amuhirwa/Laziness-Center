@@ -98,16 +98,16 @@ export default async function DashboardPage() {
     <div className="min-h-screen flex flex-col">
       <CommandPalette />
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
         <span className="font-semibold text-sm">Laziness Center</span>
-        <nav className="flex items-center gap-5 text-sm text-neutral-400">
-          <Link href="/launcher" className="hover:text-neutral-100 transition-colors">
+        <nav className="flex items-center gap-5 text-sm text-neutral-500 dark:text-neutral-400">
+          <Link href="/launcher" className="hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
             Launcher
           </Link>
-          <kbd className="hidden sm:inline text-xs text-neutral-700 border border-neutral-800 rounded px-1.5 py-0.5 font-sans">
+          <kbd className="hidden sm:inline text-xs text-neutral-400 dark:text-neutral-700 border border-neutral-300 dark:border-neutral-800 rounded px-1.5 py-0.5 font-sans">
             ⌘K
           </kbd>
-          <Link href="/notifications" className="relative hover:text-neutral-100 transition-colors min-w-11 min-h-11 flex items-center justify-center" title="Notifications">
+          <Link href="/notifications" className="relative hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors min-w-11 min-h-11 flex items-center justify-center" title="Notifications">
             <span aria-hidden>○</span>
             <span className="sr-only">Notifications</span>
             {unreadCount > 0 && (
@@ -118,11 +118,11 @@ export default async function DashboardPage() {
             )}
           </Link>
           {session.user?.role === "admin" && (
-            <Link href="/admin/modules" className="hidden sm:inline hover:text-neutral-100 transition-colors">
+            <Link href="/admin/modules" className="hidden sm:inline hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
               Admin
             </Link>
           )}
-          <span className="hidden sm:inline text-neutral-600">|</span>
+          <span className="hidden sm:inline text-neutral-300 dark:text-neutral-600">|</span>
           <span className="hidden sm:inline truncate max-w-[120px]">{session.user?.name ?? session.user?.email}</span>
           <form
             action={async () => {
@@ -234,7 +234,7 @@ function WidgetCard({
   const { moduleId, widgetId, moduleName, data } = widget
 
   return (
-    <div className="group relative flex flex-col rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+    <div className="group relative flex flex-col rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
       {/* Reorder controls — visible on hover, top-right corner */}
       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {index > 0 && (
@@ -244,7 +244,7 @@ function WidgetCard({
             <button
               type="submit"
               title="Move up"
-              className="w-6 h-6 flex items-center justify-center rounded text-neutral-600 hover:text-neutral-100 hover:bg-neutral-700 transition-colors text-xs"
+              className="w-6 h-6 flex items-center justify-center rounded text-neutral-400 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-xs"
             >
               ↑
             </button>
@@ -257,7 +257,7 @@ function WidgetCard({
             <button
               type="submit"
               title="Move down"
-              className="w-6 h-6 flex items-center justify-center rounded text-neutral-600 hover:text-neutral-100 hover:bg-neutral-700 transition-colors text-xs"
+              className="w-6 h-6 flex items-center justify-center rounded text-neutral-400 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-xs"
             >
               ↓
             </button>
@@ -279,11 +279,11 @@ function WidgetBody({ data }: { data: WidgetPayload }) {
   const inner = (
     <div className="p-4 flex flex-col gap-1 flex-1">
       <div className="text-xs text-neutral-500 uppercase tracking-wide">{data.title}</div>
-      <div className="text-2xl font-semibold text-neutral-100 leading-tight mt-1">
+      <div className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mt-1">
         {data.primary}
       </div>
       {data.secondary && (
-        <div className="text-sm text-neutral-400">{data.secondary}</div>
+        <div className="text-sm text-neutral-600 dark:text-neutral-400">{data.secondary}</div>
       )}
       {data.sparkline && data.sparkline.length > 0 && (
         <SparkLine values={data.sparkline} />
@@ -293,7 +293,7 @@ function WidgetBody({ data }: { data: WidgetPayload }) {
 
   if (data.link) {
     return (
-      <a href={data.link} className="flex-1 hover:bg-neutral-800 transition-colors">
+      <a href={data.link} className="flex-1 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
         {inner}
       </a>
     )

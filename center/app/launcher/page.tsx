@@ -33,16 +33,16 @@ export default async function LauncherPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <CommandPalette />
-      <header className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
         <Link
           href="/dashboard"
-          className="font-semibold text-sm hover:text-neutral-300 transition-colors"
+          className="font-semibold text-sm hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
         >
           Laziness Center
         </Link>
-        <div className="flex items-center gap-4 text-sm text-neutral-400">
+        <div className="flex items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
           {session.user?.role === "admin" && (
-            <Link href="/admin/modules" className="hover:text-neutral-100 transition-colors">
+            <Link href="/admin/modules" className="hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
               Admin
             </Link>
           )}
@@ -61,7 +61,7 @@ export default async function LauncherPage() {
                 {" "}
                 <Link
                   href="/admin/modules/new"
-                  className="text-neutral-300 underline hover:text-white"
+                  className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white"
                 >
                   Add one
                 </Link>
@@ -77,15 +77,15 @@ export default async function LauncherPage() {
                 href={manifest.url}
                 target={manifest.type === "linked" ? "_blank" : undefined}
                 rel={manifest.type === "linked" ? "noopener noreferrer" : undefined}
-                className="flex flex-col items-center gap-2.5 p-4 rounded-xl border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-colors"
+                className="flex flex-col items-center gap-2.5 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl bg-neutral-700 flex items-center justify-center text-sm font-mono text-neutral-300 uppercase">
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center text-sm font-mono text-neutral-600 dark:text-neutral-300 uppercase">
                   {manifest.name.slice(0, 2)}
                 </div>
                 <div className="text-center">
                   <div className="text-sm font-medium leading-snug">{manifest.name}</div>
                   {manifest.type === "linked" && (
-                    <div className="text-xs text-neutral-600 mt-0.5">↗ external</div>
+                    <div className="text-xs text-neutral-400 dark:text-neutral-600 mt-0.5">↗ external</div>
                   )}
                 </div>
               </a>

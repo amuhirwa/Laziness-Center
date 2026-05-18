@@ -13,7 +13,7 @@ export default async function AdminModulesPage() {
         <h1 className="text-lg font-semibold">Modules</h1>
         <Link
           href="/admin/modules/new"
-          className="text-sm px-4 py-1.5 bg-neutral-100 text-neutral-900 rounded-md font-medium hover:bg-white transition-colors"
+          className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity"
         >
           + Add module
         </Link>
@@ -33,7 +33,7 @@ export default async function AdminModulesPage() {
             return (
               <li
                 key={mod.id}
-                className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
+                className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
               >
                 {/* Summary row */}
                 <div className="flex items-center justify-between gap-4 p-4">
@@ -72,7 +72,7 @@ export default async function AdminModulesPage() {
                       <form action={pingModuleHealth.bind(null, mod.id)}>
                         <button
                           type="submit"
-                          className="px-3 py-2 min-h-11 hover:text-neutral-100 transition-colors"
+                          className="px-3 py-2 min-h-11 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
                         >
                           Ping
                         </button>
@@ -81,7 +81,7 @@ export default async function AdminModulesPage() {
                     <form action={toggleModule.bind(null, mod.id, !mod.enabled)}>
                       <button
                         type="submit"
-                        className="px-3 py-2 min-h-11 hover:text-neutral-100 transition-colors"
+                        className="px-3 py-2 min-h-11 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
                       >
                         {mod.enabled ? "Disable" : "Enable"}
                       </button>
@@ -89,7 +89,7 @@ export default async function AdminModulesPage() {
                     <form action={deleteModule.bind(null, mod.id)}>
                       <button
                         type="submit"
-                        className="px-3 py-2 min-h-11 hover:text-red-400 transition-colors"
+                        className="px-3 py-2 min-h-11 text-neutral-500 hover:text-red-500 transition-colors"
                         onClick={(e) => {
                           if (!confirm(`Delete ${name}?`)) e.preventDefault()
                         }}
@@ -102,8 +102,8 @@ export default async function AdminModulesPage() {
 
                 {/* Expanded detail: internal_api + events */}
                 {manifest && (manifest.internal_api || manifest.events.publishes.length > 0 || manifest.events.subscribes.length > 0 || manifest.widgets.length > 0) && (
-                  <details className="border-t border-neutral-800">
-                    <summary className="px-4 py-2 text-xs text-neutral-600 hover:text-neutral-400 cursor-pointer transition-colors select-none">
+                  <details className="border-t border-neutral-200 dark:border-neutral-800">
+                    <summary className="px-4 py-2 text-xs text-neutral-500 dark:text-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-400 cursor-pointer transition-colors select-none">
                       Details
                     </summary>
                     <div className="px-4 pb-4 pt-1 space-y-2 text-xs text-neutral-500">
