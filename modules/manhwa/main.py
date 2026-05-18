@@ -126,8 +126,8 @@ async def index(
 
     titles, cached, stale = await _get_cached_titles(pool, params_hash)
 
-    if not cached:
-        # First load — block until we have something to show
+    if not cached or (cached and not titles):
+        # First load or previously cached empty result — block until we have something
         await _revalidate(pool, params_hash, genres_list, excluded_list, min_rating, start_year)
         titles, cached, stale = await _get_cached_titles(pool, params_hash)
     elif stale:

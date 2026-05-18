@@ -3,12 +3,17 @@
 import { use, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
+type Ingredient = { name: string; quantity: number | null; unit: string | null }
+type Step = { text: string; durationMinutes?: number }
+
 type SessionState =
   | { phase: "starting" }
-  | { phase: "active"; sessionId: string; startedAt: number; steps: Array<{ text: string; durationMinutes?: number }> }
+  | { phase: "active"; sessionId: string; startedAt: number; steps: Step[]; ingredients: Ingredient[] }
   | { phase: "finishing" }
   | { phase: "done"; actualMinutes: number }
   | { phase: "error"; message: string }
+
+const inputCls = "w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500 resize-none"
 
 export default function CookModePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -21,27 +26,33 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
   const [rating, setRating] = useState<number | null>(null)
   const [notes, setNotes] = useState("")
   const [currentStep, setCurrentStep] = useState(0)
+  const [checkedIngs, setCheckedIngs] = useState<Set<number>>(new Set())
+  const [showIngs, setShowIngs] = useState(true)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     async function init() {
       try {
+        const recipeRes = await fetch(`/meals/api/recipes/${id}`)
+        const recipeData = await recipeRes.json() as {
+          steps: Step[]
+          ingredients: Ingredient[]
+        }
+        const steps = recipeData.steps ?? []
+        const ingredients = recipeData.ingredients ?? []
+
         if (existingSessionId) {
-          // Resumed session — fetch recipe steps via existing session check
           const res = await fetch(`/meals/api/cook-sessions?recipeId=${id}`)
-          const data = await res.json() as { session: { id: string; startedAt: string; servings: number } | null }
+          const data = await res.json() as { session: { id: string; startedAt: string } | null }
           if (data.session) {
-            const stepsRes = await fetch(`/meals/api/recipes/${id}`)
-            const recipeData = await stepsRes.json() as { steps: Array<{ text: string; durationMinutes?: number }> }
             const startedAt = new Date(data.session.startedAt).getTime()
-            setState({ phase: "active", sessionId: data.session.id, startedAt, steps: recipeData.steps ?? [] })
+            setState({ phase: "active", sessionId: data.session.id, startedAt, steps, ingredients })
           } else {
             setState({ phase: "error", message: "Session not found. It may have been cancelled." })
           }
           return
         }
 
-        // Start new session
         const res = await fetch("/meals/api/cook-sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -50,35 +61,24 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
 
         if (res.status === 409) {
           const body = await res.json() as { existingSessionId: string }
-          router.replace(`/meals/recipes/${id}/cook?session=${body.existingSessionId}`)
+          router.replace(`/recipes/${id}/cook?session=${body.existingSessionId}`)
           return
         }
-
         if (!res.ok) {
           const body = await res.json() as { error: string }
           setState({ phase: "error", message: body.error })
           return
         }
 
-        const data = await res.json() as {
-          sessionId: string; startedAt: string
-          recipe: { steps: Array<{ text: string; durationMinutes?: number }> }
-        }
-        setState({
-          phase: "active",
-          sessionId: data.sessionId,
-          startedAt: new Date(data.startedAt).getTime(),
-          steps: data.recipe.steps,
-        })
+        const data = await res.json() as { sessionId: string; startedAt: string }
+        setState({ phase: "active", sessionId: data.sessionId, startedAt: new Date(data.startedAt).getTime(), steps, ingredients })
       } catch (e) {
         setState({ phase: "error", message: String(e) })
       }
     }
-
     init()
   }, [id, existingSessionId, router])
 
-  // Elapsed timer
   useEffect(() => {
     if (state.phase !== "active") return
     timerRef.current = setInterval(() => {
@@ -111,8 +111,8 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
   if (state.phase === "starting") return <div className="text-sm text-neutral-500">Starting session…</div>
   if (state.phase === "error") return (
     <div className="space-y-4">
-      <p className="text-red-400 text-sm">{state.message}</p>
-      <button onClick={() => router.back()} className="text-sm text-neutral-400 hover:text-neutral-100">← Back</button>
+      <p className="text-red-500 text-sm">{state.message}</p>
+      <button onClick={() => router.back()} className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">← Back</button>
     </div>
   )
   if (state.phase === "done") return (
@@ -120,80 +120,128 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
       <div className="text-4xl">✓</div>
       <p className="text-lg font-medium">Done! Cooked in {state.actualMinutes} min</p>
       <p className="text-sm text-neutral-500">Pantry auto-deduction in progress.</p>
-      <button onClick={() => router.push("/meals")}
-        className="px-6 py-2.5 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white">
+      <button onClick={() => router.push("/")}
+        className="px-6 py-2.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90">
         Back to suggestions
       </button>
     </div>
   )
 
   const steps = state.phase === "active" ? state.steps : []
+  const ingredients = state.phase === "active" ? state.ingredients : []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Cooking</h1>
-        <div className="font-mono text-2xl text-neutral-300">{fmtTime(elapsed)}</div>
+        <div className="font-mono text-2xl text-neutral-500 dark:text-neutral-300">{fmtTime(elapsed)}</div>
       </div>
 
+      {/* Ingredients checklist */}
+      {ingredients.length > 0 && (
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+          <button
+            onClick={() => setShowIngs((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <span>Ingredients</span>
+            <span className="text-xs text-neutral-400">
+              {checkedIngs.size}/{ingredients.length} done · {showIngs ? "hide" : "show"}
+            </span>
+          </button>
+          {showIngs && (
+            <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              {ingredients.map((ing, i) => (
+                <li key={i}
+                  onClick={() => setCheckedIngs((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(i)) next.delete(i); else next.add(i)
+                    return next
+                  })}
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors select-none"
+                >
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors text-xs ${
+                    checkedIngs.has(i)
+                      ? "bg-neutral-900 dark:bg-neutral-100 border-neutral-900 dark:border-neutral-100 text-white dark:text-neutral-900"
+                      : "border-neutral-300 dark:border-neutral-600"
+                  }`}>
+                    {checkedIngs.has(i) && "✓"}
+                  </span>
+                  <span className={`text-sm ${checkedIngs.has(i) ? "line-through text-neutral-400 dark:text-neutral-600" : ""}`}>
+                    {ing.quantity != null && <span className="font-mono mr-1">{ing.quantity}</span>}
+                    {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
+                    {ing.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Steps */}
       {steps.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2 text-xs text-neutral-500">
             <span>Step {currentStep + 1} of {steps.length}</span>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {currentStep > 0 && (
-                <button onClick={() => setCurrentStep((s) => s - 1)} className="hover:text-neutral-100">← Prev</button>
+                <button onClick={() => setCurrentStep((s) => s - 1)} className="hover:text-neutral-900 dark:hover:text-neutral-100">← Prev</button>
               )}
               {currentStep < steps.length - 1 && (
-                <button onClick={() => setCurrentStep((s) => s + 1)} className="hover:text-neutral-100">Next →</button>
+                <button onClick={() => setCurrentStep((s) => s + 1)} className="hover:text-neutral-900 dark:hover:text-neutral-100">Next →</button>
               )}
             </div>
           </div>
-          <div className="p-4 rounded-xl border border-neutral-700 bg-neutral-900 text-sm leading-relaxed">
+          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm leading-relaxed">
             {steps[currentStep].durationMinutes && (
-              <span className="text-xs text-neutral-600 block mb-2">{steps[currentStep].durationMinutes} min</span>
+              <span className="text-xs text-neutral-500 block mb-2">{steps[currentStep].durationMinutes} min</span>
             )}
             {steps[currentStep].text}
           </div>
           <div className="flex gap-1 mt-2 justify-center">
             {steps.map((_, i) => (
               <button key={i} onClick={() => setCurrentStep(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentStep ? "bg-neutral-100" : "bg-neutral-700"}`}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  i === currentStep
+                    ? "bg-neutral-900 dark:bg-neutral-100"
+                    : "bg-neutral-300 dark:bg-neutral-700"
+                }`}
               />
             ))}
           </div>
         </div>
       )}
 
+      {/* Finish / rating */}
       {(state.phase === "active" || state.phase === "finishing") && (
-        <div className="space-y-4 pt-4 border-t border-neutral-800">
+        <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <div className="flex gap-3 items-center">
-            <span className="text-sm text-neutral-400">Rating:</span>
+            <span className="text-sm text-neutral-500">Rating:</span>
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} onClick={() => setRating(rating === n ? null : n)}
-                className={`text-lg transition-colors ${n <= (rating ?? 0) ? "text-yellow-400" : "text-neutral-700 hover:text-neutral-500"}`}>
+                className={`text-lg transition-colors ${n <= (rating ?? 0) ? "text-yellow-500" : "text-neutral-300 dark:text-neutral-700 hover:text-neutral-400"}`}>
                 ★
               </button>
             ))}
           </div>
           <textarea
             value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            rows={2}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500 resize-none"
+            placeholder="Notes (optional)" rows={2}
+            className={inputCls}
           />
           <div className="flex gap-3">
-            {/* isFinishing is a plain boolean — avoids comparing a narrowed discriminant */}
             {(() => {
               const isFinishing = state.phase === "finishing"
               return (
                 <>
                   <button onClick={handleFinish} disabled={isFinishing}
-                    className="px-6 py-2.5 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-40">
+                    className="px-6 py-2.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40">
                     {isFinishing ? "Saving…" : "Finish cooking"}
                   </button>
                   <button onClick={handleCancel} disabled={isFinishing}
-                    className="px-4 py-2.5 text-sm text-neutral-500 hover:text-neutral-100 disabled:opacity-40">
+                    className="px-4 py-2.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 disabled:opacity-40">
                     Cancel
                   </button>
                 </>

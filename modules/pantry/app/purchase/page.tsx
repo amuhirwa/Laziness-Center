@@ -45,7 +45,7 @@ export default function PurchasePage() {
         }),
       })
       if (!res.ok) { const b = await res.json(); setError(b.error ?? "Failed"); return }
-      router.push("/pantry")
+      router.push("/")
     } catch (err) {
       setError(String(err))
     } finally {
