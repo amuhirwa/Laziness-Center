@@ -14,7 +14,7 @@ export default async function SuggestionsPage() {
         <h1 className="text-lg font-semibold">Tonight</h1>
         <Link
           href="/meals/recipes/new"
-          className="text-sm px-4 py-1.5 bg-neutral-100 text-neutral-900 rounded-md font-medium hover:bg-white transition-colors"
+          className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity"
         >
           + Add recipe
         </Link>
@@ -24,11 +24,11 @@ export default async function SuggestionsPage() {
         <div className="text-sm text-neutral-500 space-y-2">
           <p>No recipes yet.</p>
           <p>
-            <Link href="/meals/recipes/import" className="text-neutral-300 underline hover:text-white">
+            <Link href="/meals/recipes/import" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
               Import from a URL
             </Link>{" "}
             or{" "}
-            <Link href="/meals/recipes/new" className="text-neutral-300 underline hover:text-white">
+            <Link href="/meals/recipes/new" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
               add one manually
             </Link>
             .
@@ -40,11 +40,11 @@ export default async function SuggestionsPage() {
             <Link
               key={s.recipeId}
               href={`/meals/recipes/${s.recipeId}`}
-              className="block p-4 rounded-xl border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-colors"
+              className="block p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="font-medium text-neutral-100">{s.name}</h2>
+                  <h2 className="font-medium">{s.name}</h2>
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-neutral-500">
                     {s.timeMinutes && <span>{s.timeMinutes} min</span>}
                     {s.difficulty && <span className="capitalize">{s.difficulty}</span>}
@@ -54,16 +54,16 @@ export default async function SuggestionsPage() {
                         : <span className="text-yellow-600">Missing {s.missingIngredients.length} ingredient{s.missingIngredients.length !== 1 ? "s" : ""}</span>
                     )}
                     {!s.pantryCheckAvailable && (
-                      <span className="text-neutral-600">Pantry unavailable</span>
+                      <span className="text-neutral-400 dark:text-neutral-600">Pantry unavailable</span>
                     )}
                   </div>
                 </div>
-                <span className="text-neutral-700 shrink-0">→</span>
+                <span className="text-neutral-400 shrink-0">→</span>
               </div>
             </Link>
           ))}
 
-          <p className="text-xs text-neutral-700 pt-2">
+          <p className="text-xs text-neutral-400 dark:text-neutral-600 pt-2">
             Suggestions refresh hourly and exclude recipes cooked recently.
           </p>
         </div>

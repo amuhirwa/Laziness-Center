@@ -9,22 +9,63 @@
   <style>
     :root {
       color-scheme: light dark;
-      --lc-bg:      #fafafa;
-      --lc-surface: #ffffff;
-      --lc-border:  #e5e5e5;
-      --lc-text:    #171717;
-      --lc-muted:   #737373;
+      --lc-bg:           #fafafa;
+      --lc-surface:      #ffffff;
+      --lc-border:       #e5e5e5;
+      --lc-text:         #171717;
+      --lc-muted:        #737373;
+      --lc-input-bg:     #ffffff;
+      --lc-input-border: #d4d4d4;
+      --lc-input-text:   #171717;
+      --lc-btn-bg:       #171717;
+      --lc-btn-text:     #fafafa;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --lc-bg:      #0a0a0a;
-        --lc-surface: #171717;
-        --lc-border:  #262626;
-        --lc-text:    #f5f5f5;
-        --lc-muted:   #737373;
+        --lc-bg:           #0a0a0a;
+        --lc-surface:      #171717;
+        --lc-border:       #262626;
+        --lc-text:         #f5f5f5;
+        --lc-muted:        #737373;
+        --lc-input-bg:     #171717;
+        --lc-input-border: #404040;
+        --lc-input-text:   #e5e5e5;
+        --lc-btn-bg:       #f5f5f5;
+        --lc-btn-text:     #171717;
       }
     }
     body { background: var(--lc-bg); color: var(--lc-text); }
+    input, select {
+      background: var(--lc-input-bg);
+      border: 1px solid var(--lc-input-border);
+      color: var(--lc-input-text);
+      border-radius: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--lc-muted); }
+    .lc-btn {
+      background: var(--lc-btn-bg);
+      color: var(--lc-btn-text);
+      border-radius: 0.5rem;
+      padding: 0.375rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    .lc-btn:hover { opacity: 0.85; }
+    .lc-btn-ghost {
+      background: var(--lc-surface);
+      color: var(--lc-text);
+      border: 1px solid var(--lc-border);
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .lc-btn-ghost:hover { border-color: var(--lc-muted); }
   </style>
 </head>
 <body class="min-h-screen antialiased font-sans">

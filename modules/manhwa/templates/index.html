@@ -8,40 +8,28 @@
       class="mb-6 flex flex-wrap gap-3 items-end text-sm">
 
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-neutral-500">Genres</label>
-    <input name="genres" value="{{ genres }}"
-           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
-                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-44">
+    <label class="text-xs" style="color:var(--lc-muted)">Genres</label>
+    <input name="genres" value="{{ genres }}" class="w-44">
   </div>
 
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-neutral-500">Exclude</label>
-    <input name="excluded_genres" value="{{ excluded_genres }}"
-           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
-                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-52">
+    <label class="text-xs" style="color:var(--lc-muted)">Exclude</label>
+    <input name="excluded_genres" value="{{ excluded_genres }}" class="w-52">
   </div>
 
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-neutral-500">Min rating</label>
+    <label class="text-xs" style="color:var(--lc-muted)">Min rating</label>
     <input name="min_rating" type="number" step="0.1" min="0" max="10"
-           value="{{ min_rating }}"
-           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
-                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-24">
+           value="{{ min_rating }}" class="w-24">
   </div>
 
   <div class="flex flex-col gap-1">
-    <label class="text-xs text-neutral-500">From year</label>
+    <label class="text-xs" style="color:var(--lc-muted)">From year</label>
     <input name="start_year" type="number" min="2000" max="2030"
-           value="{{ start_year }}"
-           class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm
-                  text-neutral-100 focus:outline-none focus:border-neutral-500 w-24">
+           value="{{ start_year }}" class="w-24">
   </div>
 
-  <button type="submit"
-          class="px-4 py-2 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium
-                 hover:bg-white transition-colors">
-    Search
-  </button>
+  <button type="submit" class="lc-btn">Search</button>
 </form>
 
 {# ── Status bar ──────────────────────────────────────────────────────────── #}
@@ -109,17 +97,11 @@
           <form method="POST" action="{{ request.url_for('add_to_list') }}"
                 class="flex gap-1">
             <input type="hidden" name="mu_id" value="{{ t.mu_id }}">
-            <select name="status"
-                    class="bg-neutral-900 border border-neutral-700 rounded-md px-2 py-1
-                           text-xs text-neutral-300 focus:outline-none">
+            <select name="status" style="padding:0.25rem 0.5rem;font-size:0.75rem">
               <option value="want">Want</option>
               <option value="reading">Reading</option>
             </select>
-            <button type="submit"
-                    class="px-2 py-1 text-xs rounded-md bg-neutral-800 text-neutral-300
-                           hover:bg-neutral-700 hover:text-white transition-colors">
-              +
-            </button>
+            <button type="submit" class="lc-btn-ghost">+</button>
           </form>
         {% endif %}
       </div>

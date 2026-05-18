@@ -74,8 +74,8 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
         {[1, 2, 3, 4, 6].map((n) => (
           <Link key={n} href={`/meals/recipes/${id}?servings=${n}`}
             className={`px-2 py-0.5 rounded ${requestedServings === n
-              ? "bg-neutral-100 text-neutral-900 font-medium"
-              : "text-neutral-500 hover:text-neutral-100"}`}>
+              ? "bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 font-medium"
+              : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"}`}>
             {n}
           </Link>
         ))}
@@ -85,7 +85,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
       {totalCost !== null && (
         <div className="text-sm">
           <span className="text-neutral-400">Est. cost: </span>
-          <span className="text-neutral-200 font-medium">
+          <span className="text-neutral-800 dark:text-neutral-200 font-medium">
             {new Intl.NumberFormat(undefined, { style: "currency", currency }).format(totalCost)}
           </span>
           {price && price.unpriced.length > 0 && (
@@ -106,7 +106,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
               Resume
             </Link>
             <form action={`/meals/api/cook-sessions/${session.id}/cancel`} method="POST">
-              <button type="submit" className="text-xs px-3 py-1 border border-neutral-600 rounded-md text-neutral-400 hover:text-neutral-100">
+              <button type="submit" className="text-xs px-3 py-1 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100">
                 Cancel
               </button>
             </form>
@@ -117,7 +117,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
       {/* Ingredients */}
       {scaledIngs.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-3">Ingredients</h2>
+          <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-3">Ingredients</h2>
           <ul className="space-y-1.5">
             {scaledIngs.map((ing, i) => {
               const available = check ? availableSet.has(ing.name) : null
@@ -128,7 +128,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
                     available === false ? "bg-yellow-500" :
                     "bg-neutral-600"
                   }`} />
-                  <span className={available === false ? "text-yellow-400" : "text-neutral-200"}>
+                  <span className={available === false ? "text-yellow-600" : ""}>
                     {ing.quantity != null && <span className="font-mono mr-1">{ing.quantity}</span>}
                     {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
                     {ing.name}
@@ -144,10 +144,10 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
       {/* Steps */}
       {steps.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-3">Steps</h2>
+          <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-3">Steps</h2>
           <ol className={`space-y-3 ${recipe.hasStructuredSteps ? "list-decimal list-inside" : ""}`}>
             {steps.map((step, i) => (
-              <li key={i} className="text-sm text-neutral-300 leading-relaxed">
+              <li key={i} className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
                 {step.durationMinutes && (
                   <span className="text-xs text-neutral-600 mr-2">[{step.durationMinutes} min]</span>
                 )}
@@ -160,10 +160,10 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
 
       {/* Cook button */}
       {!session && (
-        <div className="pt-4 border-t border-neutral-800">
+        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <Link
             href={`/meals/recipes/${id}/cook`}
-            className="inline-block px-6 py-2.5 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white transition-colors"
+            className="inline-block px-6 py-2.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Start cooking
           </Link>

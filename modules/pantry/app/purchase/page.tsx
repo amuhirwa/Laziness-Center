@@ -7,6 +7,9 @@ type PurchaseItem = { name: string; quantity: string; unit: string; unitPrice: s
 
 const EMPTY_ITEM: PurchaseItem = { name: "", quantity: "", unit: "", unitPrice: "" }
 
+const input = "bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500"
+const inputSm = "bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-neutral-500"
+
 export default function PurchasePage() {
   const router = useRouter()
   const [items, setItems] = useState<PurchaseItem[]>([{ ...EMPTY_ITEM }])
@@ -60,27 +63,27 @@ export default function PurchasePage() {
               <input
                 value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)}
                 placeholder="Ingredient" required={i === 0}
-                className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500"
+                className={input}
               />
               <input
                 value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)}
                 type="number" step="any" min="0" placeholder="Qty"
-                className="bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-neutral-500"
+                className={inputSm}
               />
               <input
                 value={item.unit} onChange={(e) => updateItem(i, "unit", e.target.value)}
                 placeholder="Unit" list="units"
-                className="bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-neutral-500"
+                className={inputSm}
               />
               <input
                 value={item.unitPrice} onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
                 type="number" step="any" min="0" placeholder="$/unit"
-                className="bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-neutral-500"
+                className={inputSm}
               />
               <button
                 type="button"
                 onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
-                className="text-neutral-600 hover:text-red-400 transition-colors text-sm"
+                className="text-neutral-400 hover:text-red-500 transition-colors text-sm"
               >✕</button>
             </div>
           ))}
@@ -95,39 +98,39 @@ export default function PurchasePage() {
         <button
           type="button"
           onClick={() => setItems((p) => [...p, { ...EMPTY_ITEM }])}
-          className="text-sm text-neutral-500 hover:text-neutral-100 transition-colors"
+          className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
         >
           + Add item
         </button>
 
-        <div className="flex gap-3 items-end pt-2 border-t border-neutral-800">
+        <div className="flex gap-3 items-end pt-2 border-t border-neutral-200 dark:border-neutral-800">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-neutral-500">Total cost (optional)</label>
             <input
               value={totalCost} onChange={(e) => setTotalCost(e.target.value)}
               type="number" step="any" min="0" placeholder="0.00"
-              className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:border-neutral-500"
+              className={`${input} w-28`}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-neutral-500">Currency</label>
             <input
               value={currency} onChange={(e) => setCurrency(e.target.value)}
-              className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-20 focus:outline-none focus:border-neutral-500"
+              className={`${input} w-20`}
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="flex gap-3">
           <button
             type="submit" disabled={loading}
-            className="px-4 py-2 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white transition-colors disabled:opacity-40"
+            className="px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
           >
             {loading ? "Saving…" : "Save purchase"}
           </button>
-          <a href="/pantry" className="px-4 py-2 text-sm text-neutral-500 hover:text-neutral-100 transition-colors">
+          <a href="/pantry" className="px-4 py-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
             Cancel
           </a>
         </div>

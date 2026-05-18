@@ -19,7 +19,9 @@ http://lazy.lovey.tv {
 
     handle /manhwa* {
         uri strip_prefix /manhwa
-        reverse_proxy manhwa:8000
+        reverse_proxy manhwa:8000 {
+            header_up X-Forwarded-Proto https
+        }
     }
 
     reverse_proxy center:3000

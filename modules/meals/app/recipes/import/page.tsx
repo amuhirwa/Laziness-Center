@@ -4,6 +4,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { ImportedRecipe } from "@/lib/import"
 
+const inputCls = "bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500"
+const btnPrimary = "px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40"
+
 export default function ImportPage() {
   const router = useRouter()
   const [url, setUrl] = useState("")
@@ -56,19 +59,18 @@ export default function ImportPage() {
         <input
           value={url} onChange={(e) => setUrl(e.target.value)}
           type="url" required placeholder="https://..."
-          className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500"
+          className={`flex-1 ${inputCls}`}
         />
-        <button type="submit" disabled={loading}
-          className="px-4 py-2 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-40">
+        <button type="submit" disabled={loading} className={btnPrimary}>
           {loading ? "Fetching…" : "Fetch"}
         </button>
       </form>
 
-      {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
+      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       {preview && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl border border-neutral-700 bg-neutral-900 space-y-3 text-sm">
+          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 space-y-3 text-sm">
             <div>
               <span className="text-neutral-500">Name: </span>
               <span className="font-medium">{preview.name}</span>
@@ -84,12 +86,12 @@ export default function ImportPage() {
                 <span className="text-neutral-500 block mb-1">Ingredients ({preview.ingredients.length}):</span>
                 <ul className="space-y-0.5 ml-2">
                   {preview.ingredients.slice(0, 6).map((i, idx) => (
-                    <li key={idx} className="text-neutral-400">
+                    <li key={idx} className="text-neutral-600 dark:text-neutral-400">
                       {i.quantity != null && `${i.quantity} `}{i.unit && `${i.unit} `}{i.name}
                     </li>
                   ))}
                   {preview.ingredients.length > 6 && (
-                    <li className="text-neutral-600">… {preview.ingredients.length - 6} more</li>
+                    <li className="text-neutral-400 dark:text-neutral-600">… {preview.ingredients.length - 6} more</li>
                   )}
                 </ul>
               </div>
@@ -98,23 +100,22 @@ export default function ImportPage() {
               <div>
                 <span className="text-neutral-500">{preview.steps.length} step{preview.steps.length !== 1 ? "s" : ""}</span>
                 {!preview.hasStructuredSteps && preview.steps.length === 1 && (
-                  <span className="text-neutral-600 ml-1">(blob — you can restructure manually)</span>
+                  <span className="text-neutral-400 dark:text-neutral-600 ml-1">(blob — you can restructure manually)</span>
                 )}
               </div>
             )}
           </div>
 
           <div className="flex gap-3">
-            <button onClick={handleSave} disabled={saving}
-              className="px-4 py-2 bg-neutral-100 text-neutral-900 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-40">
+            <button onClick={handleSave} disabled={saving} className={btnPrimary}>
               {saving ? "Saving…" : "Save recipe"}
             </button>
             <button onClick={() => setPreview(null)}
-              className="text-sm text-neutral-500 hover:text-neutral-100">
+              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
               Try a different URL
             </button>
           </div>
-          <p className="text-xs text-neutral-600">You can edit the recipe after saving.</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-600">You can edit the recipe after saving.</p>
         </div>
       )}
     </div>
