@@ -1,7 +1,7 @@
 import { lc } from "./sdk"
 import type { LCError } from "@lc/sdk"
 
-type CheckResult = { available: string[]; missing: string[]; low: string[] }
+type CheckResult = { available: string[]; staples: string[]; missing: string[]; low: string[] }
 type PriceResult = {
   priced: Array<{ name: string; totalCost: number; currency: string }>
   unpriced: Array<{ name: string; reason: string }>

@@ -59,13 +59,15 @@ export async function getSuggestions(
 
   // Check pantry availability for all ingredients in the pool at once
   const allIngredients = [...new Set(pool.flatMap((r) => (r.ingredients as Ingredient[]).map((i) => i.name)))]
-  let availableSet: Set<string> | null = null
+  let inStockSet: Set<string> | null = null
+  let staplesSet: Set<string> | null = null
   let pantryOk = false
   try {
     const { checkIngredients } = await import("./pantry")
     const result = await checkIngredients(allIngredients)
     if (result) {
-      availableSet = new Set(result.available)
+      inStockSet = new Set(result.available)
+      staplesSet = new Set(result.staples ?? [])
       pantryOk = true
     }
   } catch { /* pantry unreachable */ }
@@ -76,13 +78,20 @@ export async function getSuggestions(
     let score = 1.0
     if (recipe.isPinned) score *= 3.0
 
-    if (availableSet !== null) {
+    if (inStockSet !== null) {
       const ings = recipe.ingredients as Ingredient[]
-      const fraction = ings.length === 0
-        ? 1
-        : ings.filter((i) => availableSet!.has(i.name)).length / ings.length
-      if (fraction >= 0.8) score *= 2.0
-      else if (fraction >= 0.5) score *= 1.5
+      if (ings.length > 0) {
+        const inStock = ings.filter((i) => inStockSet!.has(i.name)).length
+        const fromStaples = ings.filter((i) => staplesSet?.has(i.name)).length
+        const allAvail = inStock + fromStaples
+        const fraction = allAvail / ings.length
+        // Availability multiplier (in-stock + staples)
+        if (fraction >= 0.8) score *= 2.0
+        else if (fraction >= 0.5) score *= 1.5
+        // Extra bonus for having actual stock (not just staples)
+        const inStockFraction = inStock / ings.length
+        if (inStockFraction >= 0.5) score *= 1.3
+      }
     }
 
     const rating = ratingMap.get(recipe.id)
@@ -96,8 +105,8 @@ export async function getSuggestions(
   // Build suggestion objects with missing ingredients
   return selected.map(({ recipe }) => {
     const ings = recipe.ingredients as Ingredient[]
-    const missing = pantryOk && availableSet
-      ? ings.filter((i) => i.name && !availableSet!.has(i.name)).map((i) => i.name)
+    const missing = pantryOk && inStockSet
+      ? ings.filter((i) => i.name && !inStockSet!.has(i.name) && !staplesSet?.has(i.name)).map((i) => i.name)
       : null
 
     return {

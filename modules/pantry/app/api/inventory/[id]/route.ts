@@ -9,14 +9,19 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const body = await request.json() as { quantity?: number }
-  if (body.quantity == null || typeof body.quantity !== "number") {
-    return NextResponse.json({ error: "quantity required" }, { status: 400 })
+  const body = await request.json() as { quantity?: number; alwaysAvailable?: boolean }
+
+  const patch: Partial<typeof inventory.$inferInsert> = { lastUpdated: new Date() }
+  if (body.quantity != null) patch.quantity = String(body.quantity)
+  if (body.alwaysAvailable != null) patch.alwaysAvailable = body.alwaysAvailable
+
+  if (Object.keys(patch).length === 1) {
+    return NextResponse.json({ error: "quantity or alwaysAvailable required" }, { status: 400 })
   }
 
   const [updated] = await db
     .update(inventory)
-    .set({ quantity: String(body.quantity), lastUpdated: new Date() })
+    .set(patch)
     .where(eq(inventory.id, parseInt(id)))
     .returning()
 

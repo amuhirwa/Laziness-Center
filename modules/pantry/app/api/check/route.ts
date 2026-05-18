@@ -14,21 +14,31 @@ export async function POST(request: NextRequest) {
   }
   const items = body.items as string[]
 
-  // Fetch all pantry items with stock > 0
   const rows = await db.select().from(inventory)
-  const inStock = rows
+
+  // Separate in-stock from staples (always_available but currently empty)
+  const inStockNorms = rows
     .filter((r) => parseFloat(r.quantity as string) > 0)
     .map((r) => r.nameNormalized)
 
+  const staplesNorms = rows
+    .filter((r) => r.alwaysAvailable && parseFloat(r.quantity as string) <= 0)
+    .map((r) => r.nameNormalized)
+
   const available: string[] = []
+  const staples: string[] = []
   const missing: string[] = []
 
   for (const name of items) {
     const norm = normalizeIngredient(name)
-    const found = inStock.some((pantryNorm) => ingredientMatches(norm, pantryNorm))
-    if (found) available.push(name)
-    else missing.push(name)
+    if (inStockNorms.some((p) => ingredientMatches(norm, p))) {
+      available.push(name)
+    } else if (staplesNorms.some((p) => ingredientMatches(norm, p))) {
+      staples.push(name)
+    } else {
+      missing.push(name)
+    }
   }
 
-  return NextResponse.json({ available, missing, low: [] })
+  return NextResponse.json({ available, staples, missing, low: [] })
 }

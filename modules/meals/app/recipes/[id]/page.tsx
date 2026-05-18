@@ -40,6 +40,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
   ])
 
   const check = checkResult.status === "fulfilled" ? checkResult.value : null
+  const staplesSet = new Set(check?.staples ?? [])
   const price = priceResult.status === "fulfilled" ? priceResult.value : null
   const session = activeSession.status === "fulfilled" ? activeSession.value[0] : null
 
@@ -127,15 +128,18 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
           <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-3">Ingredients</h2>
           <ul className="space-y-1.5">
             {scaledIngs.map((ing, i) => {
-              const available = check ? availableSet.has(ing.name) : null
+              const inStock = check ? availableSet.has(ing.name) : null
+              const isStaple = check && !inStock ? staplesSet.has(ing.name) : false
+              const available = inStock || isStaple
               return (
                 <li key={i} className="flex items-center gap-3 text-sm">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    available === true ? "bg-green-500" :
+                    inStock ? "bg-green-500" :
+                    isStaple ? "bg-blue-400" :
                     available === false ? "bg-yellow-500" :
-                    "bg-neutral-600"
-                  }`} />
-                  <span className={available === false ? "text-yellow-600" : ""}>
+                    "bg-neutral-400 dark:bg-neutral-600"
+                  }`} title={isStaple ? "Staple — quick to get" : undefined} />
+                  <span className={!available && check ? "text-yellow-600" : ""}>
                     {ing.quantity != null && <span className="font-mono mr-1">{ing.quantity}</span>}
                     {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
                     {ing.name}

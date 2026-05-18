@@ -48,6 +48,9 @@ export async function register() {
     )
   `)
 
+  // ── Schema migrations (idempotent) ───────────────────────────────────────
+  await db.execute(sql`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS always_available BOOLEAN NOT NULL DEFAULT false`)
+
   // ── Currency migration: USD → RWF ─────────────────────────────────────────
   // Fix the column default on existing tables (CREATE TABLE IF NOT EXISTS won't update it).
   // Update any dev-era rows that were written with the old USD default.

@@ -3,7 +3,7 @@
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
 **Last updated:** 2026-05-18
-**Updated by:** Claude Code — deployment topology + build fixes
+**Updated by:** Claude Code — post-deploy fixes + TheMealDB + pantry staples
 
 ---
 
@@ -85,7 +85,20 @@ sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Last Session Summary (Phase 7 + housekeeping)
+## Last Session Summary (post-deploy fixes + features)
+
+- **Deployed and fixed** — all modules now running. Fixed: admin role (ADMIN_EMAIL env var), DeleteButton onClick RSC error, TemplateResponse Starlette API change, base64 password URL encoding (meals/pantry DB + Redis), manhwa CSS selector, manifest `internal_api` double-/api/ bug, Next.js basePath double-path bug across meals/pantry Links and router.push calls.
+- **Light/dark mode** — all Center pages, meals, pantry, manhwa now follow `prefers-color-scheme`. Input fields, buttons, cards all themed.
+- **TheMealDB integration** — `lib/mealdb.ts` parser. Import page has 3 tabs: Search MealDB, By Category (bulk import with progress bar + selection), From URL. Thumbnails stored on recipes, shown on suggestion cards, library rows, and recipe detail.
+- **Suggestion filter pills** — Any / Breakfast / Lunch / Dinner / Dessert / Vegetarian / Vegan. Uses `?type=` URL param. `getSuggestions` extended with `tag` param.
+- **Recipe library tag filters** — auto-generated from actual recipe tags. `?tag=` and `?mealType=` URL params.
+- **Cook mode ingredients** — checklist above steps. Click to cross off. Collapsible.
+- **Recipe edit page** — `/recipes/[id]/edit` built.
+- **Ingredient fuzzy matching** — descriptor stripping (melted butter → butter, warm milk → milk) + substring fallback.
+- **Pantry staples** — `always_available` boolean on inventory. Three-section inventory page (in stock / staples / out of stock). Inline qty edit, mark-out, staple toggle, add-item form. Check endpoint returns `{ available, staples, missing }`. Recipe detail shows 3 dot colors (green/blue/yellow). Suggestion scoring gives ×1.3 bonus for actual stock over staples.
+- **manifest `internal_api` fix** — correct values: `http://meals:3000/meals`, `http://pantry:3000/pantry`, `http://manhwa:8000`. deployment_steps.md updated.
+
+## Previous Session Summary (Phase 7 + housekeeping)
 
 - **Phase 6 deferred** — `docs/center-srs.md §7` updated. FinGuide registered as a launcher-only `linked` tile (manifest needs real URL filled in). Formal phased rollout declared complete.
 - **Currency cleanup** — all `"USD"` defaults changed to `"RWF"`. Pantry migration runs `ALTER TABLE` + `UPDATE` on every startup. Meals cost display uses `Intl.NumberFormat`. `DEFAULT_CURRENCY=RWF` in `.env.example`. `integration-patterns.md` updated with currency handling rules.
@@ -139,9 +152,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## What's In Progress
 
-- **First deploy** — `.env.example` → `.env`, fill all secrets including `MEALS_DEFAULT_USER` and `PANTRY_DB_PASSWORD`, run `docker compose up -d`.
-- **Register meals and pantry modules** — paste manifests into Admin → Modules after deploy.
-- **Bootstrap recipe library** — import first recipes via `/meals/recipes/import`, or add manually.
+- **Bootstrap recipe library** — import first recipes via `/meals/recipes/import` (MealDB tab), or add manually.
+- **Add pantry staples** — go to `/pantry`, use the "Add" form to add always-available items (eggs, salt, oil, etc.).
 
 ## What Changed This Session (post-Phase 5)
 
@@ -171,7 +183,7 @@ sudo nginx -t && sudo systemctl reload nginx
 - **D27:** Next.js modules use `basePath` (not Caddy prefix-stripping) — Caddy routes `/meals*` → `meals:3000` without stripping; `basePath: "/meals"` in `next.config.ts` handles URL generation. `internal_api` in manifests must include the basePath: `http://meals:3000/meals/api`.
 - **D28:** `MEALS_DEFAULT_USER` / `PANTRY_DEFAULT_USER` env vars for user identity in Phase 5 — Caddy forward-auth not yet wired to modules. Revisit in Phase 7 or when second user starts actively using meals/pantry.
 
-## Known Issues / Tech Debt
+## Known Issues / Tech Debt (updated)
 
 - `meals.recipe.cooked` stream consumer in pantry starts in `instrumentation.ts` with `"$"` offset (only new messages). On first deploy, any events published before the consumer group was created are missed. Re-subscribe with offset `"0"` if you want to replay historical events.
 - Suggestion cache invalidation deletes ALL cache rows on any pantry change — fine for one user, overkill if two users have different caches. Scope deletion by user in v1.1.
