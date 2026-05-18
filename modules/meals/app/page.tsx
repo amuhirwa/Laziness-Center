@@ -77,7 +77,6 @@ export default async function SuggestionsPage() {
                 </div>
                 <span className="text-neutral-400 shrink-0">→</span>
               </div>
-            </div>
             </Link>
           ))}
 
