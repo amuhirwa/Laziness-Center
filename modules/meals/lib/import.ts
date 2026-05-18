@@ -41,8 +41,12 @@ export async function importFromUrl(url: string): Promise<ImportResult> {
   let html: string
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      headers: { "User-Agent": "LazinessCenter/1.0 (+https://lazy.lovey.tv)" },
+      signal: AbortSignal.timeout(12000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; LazinessCenter/1.0; +https://lazy.lovey.tv)",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+      },
     })
     if (!res.ok) return { success: false, error: `URL returned ${res.status}`, pageTitle: null }
     html = await res.text()
