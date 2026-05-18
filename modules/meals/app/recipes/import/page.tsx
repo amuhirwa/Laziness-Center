@@ -15,7 +15,7 @@ const btnSecondary = "px-4 py-2 border border-neutral-300 dark:border-neutral-70
 
 export default function ImportPage() {
   const router = useRouter()
-  const [tab, setTab] = useState<"url" | "mealdb" | "category">("mealdb")
+  const [tab, setTab] = useState<"url" | "mealdb" | "category" | "json">("mealdb")
 
   return (
     <div className="max-w-lg">
@@ -23,7 +23,7 @@ export default function ImportPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-neutral-200 dark:border-neutral-800">
-        {([["mealdb", "Search MealDB"], ["category", "By Category"], ["url", "From URL"]] as const).map(([t, label]) => (
+        {([["mealdb", "Search MealDB"], ["category", "By Category"], ["url", "From URL"], ["json", "Paste JSON"]] as const).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -41,6 +41,7 @@ export default function ImportPage() {
       {tab === "mealdb" && <MealDBTab router={router} />}
       {tab === "category" && <CategoryTab router={router} />}
       {tab === "url" && <UrlTab router={router} />}
+      {tab === "json" && <JsonTab router={router} />}
     </div>
   )
 }
@@ -492,6 +493,138 @@ function UrlTab({ router }: { router: ReturnType<typeof useRouter> }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── JSON tab ───────────────────────────────────────────────────────────────
+
+const JSON_TEMPLATE = {
+  name: "Recipe Name",
+  timeMinutes: 30,
+  servingsDefault: 2,
+  difficulty: "easy",
+  mealTypes: ["dinner"],
+  tags: ["tag1", "tag2"],
+  ingredients: [
+    { name: "flour", quantity: 200, unit: "g" },
+    { name: "eggs", quantity: 2, unit: "pcs" },
+    { name: "butter", quantity: 50, unit: "g" },
+  ],
+  steps: [
+    { text: "Mix dry ingredients together.", durationMinutes: 5 },
+    { text: "Add wet ingredients and combine." },
+    { text: "Cook until done." },
+  ],
+  sourceUrl: "https://...",
+  thumbnailUrl: "https://...",
+}
+
+function JsonTab({ router }: { router: ReturnType<typeof useRouter> }) {
+  const [raw, setRaw] = useState("")
+  const [error, setError] = useState("")
+  const [preview, setPreview] = useState<typeof JSON_TEMPLATE | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  function handleParse() {
+    setError(""); setPreview(null)
+    if (!raw.trim()) { setError("Paste your JSON first"); return }
+    try {
+      const parsed = JSON.parse(raw)
+      if (!parsed.name?.trim()) { setError("name is required"); return }
+      if (!Array.isArray(parsed.ingredients)) { setError("ingredients must be an array"); return }
+      if (!Array.isArray(parsed.steps)) { setError("steps must be an array"); return }
+      setPreview(parsed)
+    } catch (e) {
+      setError(`Invalid JSON: ${String(e).replace("SyntaxError: ", "")}`)
+    }
+  }
+
+  async function handleSave() {
+    if (!preview) return
+    setSaving(true)
+    try {
+      const res = await fetch("/meals/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(preview),
+      })
+      if (!res.ok) { const b = await res.json(); setError(b.error ?? "Failed"); return }
+      const data = await res.json() as { recipeId: string }
+      router.push(`/recipes/${data.recipeId}`)
+    } catch (e) { setError(String(e)) }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-neutral-500">Paste a recipe in JSON format.</p>
+        <button
+          onClick={() => setRaw(JSON.stringify(JSON_TEMPLATE, null, 2))}
+          className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 underline"
+        >
+          Load template
+        </button>
+      </div>
+
+      <textarea
+        value={raw}
+        onChange={(e) => { setRaw(e.target.value); setPreview(null); setError("") }}
+        rows={14}
+        placeholder={JSON.stringify(JSON_TEMPLATE, null, 2)}
+        spellCheck={false}
+        className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-neutral-500 resize-none"
+      />
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      {!preview ? (
+        <button onClick={handleParse} disabled={!raw.trim()} className={btnPrimary}>
+          Preview
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <div className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm space-y-1">
+            <p className="font-medium">{preview.name}</p>
+            <p className="text-neutral-500 text-xs">
+              {[
+                preview.timeMinutes && `${preview.timeMinutes} min`,
+                preview.servingsDefault && `${preview.servingsDefault} servings`,
+                Array.isArray(preview.ingredients) && `${preview.ingredients.length} ingredients`,
+                Array.isArray(preview.steps) && `${preview.steps.length} steps`,
+              ].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+              {saving ? "Saving…" : "Save recipe"}
+            </button>
+            <button onClick={() => setPreview(null)}
+              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+              Edit JSON
+            </button>
+          </div>
+        </div>
+      )}
+
+      <details className="text-xs">
+        <summary className="cursor-pointer text-neutral-400 dark:text-neutral-600 hover:text-neutral-600 dark:hover:text-neutral-400">
+          Field reference
+        </summary>
+        <div className="mt-2 space-y-1 text-neutral-500 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3">
+          <p><code className="text-neutral-700 dark:text-neutral-300">name</code> string — required</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">timeMinutes</code> number — optional</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">servingsDefault</code> number — default 2</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">difficulty</code> "easy" | "medium" | "hard" — optional</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">mealTypes</code> string[] — "breakfast" | "lunch" | "dinner"</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">tags</code> string[] — any labels, e.g. ["italian", "vegetarian"]</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">ingredients</code> {"{"} name, quantity?, unit? {"}"}[] — required</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">steps</code> {"{"} text, durationMinutes? {"}"}[] — required</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">sourceUrl</code> string — optional</p>
+          <p><code className="text-neutral-700 dark:text-neutral-300">thumbnailUrl</code> string — optional</p>
+        </div>
+      </details>
     </div>
   )
 }

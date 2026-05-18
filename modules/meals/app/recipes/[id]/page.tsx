@@ -6,6 +6,7 @@ import type { Ingredient, Step } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
 import Link from "next/link"
 import { checkIngredients, priceIngredients } from "@/lib/pantry"
+import { findSubRecipe } from "@/lib/subrecipe"
 import { notFound } from "next/navigation"
 
 const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
@@ -28,6 +29,11 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
     ...i,
     quantity: i.quantity != null ? Math.round(i.quantity * scale * 100) / 100 : null,
   }))
+
+  // All other recipes for sub-recipe detection
+  const allRecipes = await db.select({ id: recipes.id, name: recipes.name, timeMinutes: recipes.timeMinutes })
+    .from(recipes)
+  const otherRecipes = allRecipes.filter((r) => r.id !== id)
 
   // Parallel pantry calls
   const [checkResult, priceResult, activeSession] = await Promise.allSettled([
@@ -131,6 +137,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
               const inStock = check ? availableSet.has(ing.name) : null
               const isStaple = check && !inStock ? staplesSet.has(ing.name) : false
               const available = inStock || isStaple
+              const subRecipe = findSubRecipe(ing.name, otherRecipes)
               return (
                 <li key={i} className="flex items-center gap-3 text-sm">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -144,6 +151,15 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
                     {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
                     {ing.name}
                   </span>
+                  {subRecipe && (
+                    <Link
+                      href={`/recipes/${subRecipe.id}`}
+                      className="text-xs text-blue-500 hover:text-blue-600 shrink-0 ml-auto"
+                      title={`You have a recipe for this: ${subRecipe.name}`}
+                    >
+                      or make it →
+                    </Link>
+                  )}
                 </li>
               )
             })}

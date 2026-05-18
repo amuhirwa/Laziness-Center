@@ -1,11 +1,12 @@
 # Module SRS — `pantry`
 
-**Version:** 0.2
-**Date:** 2026-05-17
+**Version:** 0.3
+**Date:** 2026-05-19
 **Module type:** `proxy_subpath`
-**Status:** Draft — awaiting confirmation before implementation
+**Status:** Deployed and operational
 
 **Changelog**
+- v0.3 — Post-deploy additions: `always_available` boolean on inventory (staples — items always obtainable within minutes, e.g. eggs, oil, salt); `POST /api/inventory` endpoint for adding items directly without a purchase log; `PATCH /api/inventory/:id` extended to accept `alwaysAvailable` in addition to `quantity`; `/api/check` now returns `{ available, staples, missing }` (was `{ available, missing, low }`); ingredient matching upgraded from exact normalized name to fuzzy (descriptor stripping + substring containment — "melted butter" matches "butter"); interactive inventory UI (client component with inline qty edit, mark-out button, staple toggle, section grouping); `internal_api` corrected to `http://pantry:3000/pantry` (not `…/pantry/api`); currency default changed from USD to RWF throughout.
 - v0.2 — Fixed health_check to full internal URL (D13); added POST /api/price-check endpoint with v0.1 unit conversion table and algorithm; resolved all three open questions (unit reconciliation, low-stock thresholds, pluralization normalization); updated meals.recipe.cooked auto-deduction to use scaled quantities and mark partial deductions.
 - v0.1 — Initial draft.
 
@@ -44,14 +45,13 @@ Pantry tracks what food and ingredients you have in stock. You log purchases, up
 id: pantry
 name: Pantry
 description: What's in stock, what's running low
-icon: package
 type: proxy_subpath
 url: /pantry
-internal_api: http://pantry:8000/api
-health_check: http://pantry:8000/health
+internal_api: http://pantry:3000/pantry
+health_check: http://pantry:3000/pantry/health
 widgets:
   - id: low-stock
-    endpoint: /widget/low-stock
+    endpoint: /api/widget/low-stock
     refresh_seconds: 600
 events:
   publishes:
@@ -71,18 +71,25 @@ events:
 - **Purpose:** Answer "which of these ingredients do I have?"
 - **Caller:** meal-picker, any future module.
 - **Auth:** service token.
-- **Body:** `{ "items": ["flour", "eggs", "butter"] }`
-- **Response:**
+- **Body:** `{ "items": ["flour", "melted butter", "warm milk"] }`
+- **Response (v0.3):**
   ```json
   {
     "available": ["flour"],
-    "missing":   ["eggs", "butter"],
+    "staples":   ["warm milk"],
+    "missing":   ["melted butter"],
     "low":       []
   }
   ```
-  `low` is always empty in v0.1 (low-stock thresholds deferred to v0.2).
+  - `available` — quantity > 0 in inventory.
+  - `staples` — `always_available = true` but currently quantity = 0 (can be obtained in minutes).
+  - `missing` — neither in stock nor a staple.
+  - `low` — always empty until v0.2 thresholds are implemented.
 
-**Name matching:** normalized name — lowercased, trailing `s` stripped (so "eggs" matches "egg"). Known limitation: "scallions" ≠ "green onions". Aliases planned for v0.2. If a normalized match can't be found, the item is `missing`.
+**Name matching (v0.3 — upgraded from v0.2):** Two-stage fuzzy matching:
+1. Strip leading descriptor words ("melted", "warm", "diced", "all-purpose", etc.) from the ingredient name to get the base noun.
+2. Exact normalized match on base noun; if not found, substring containment in either direction ("butter" matches "melted butter", "whole milk" matches "milk").
+Known remaining limitation: synonyms ("scallions" ≠ "green onions") — alias table still planned.
 
 ### `POST /api/price-check`
 
@@ -160,13 +167,21 @@ No other conversions (oz↔g, cup↔ml, etc.) in v0.1. Reason: non-metric conver
 
 - **Caller:** pantry's own UI.
 - **Auth:** user session.
-- **Response:** `{ items: [{ id, nameDisplay, nameNormalized, quantity, unit, lastUpdated }] }` sorted by `nameDisplay`.
+- **Response:** `{ items: [{ id, nameDisplay, nameNormalized, quantity, unit, alwaysAvailable, lastUpdated }] }` sorted by `nameDisplay`.
+
+### `POST /api/inventory`
+
+- **Purpose:** Add an item directly (without logging a purchase) — for staples and pantry-always items.
+- **Auth:** user session.
+- **Body:** `{ "name": "eggs", "unit": "pcs", "alwaysAvailable": true }`
+- **Behaviour:** Inserts with `quantity = 0`. If item already exists (by normalized name), updates `alwaysAvailable` only.
+- **Response:** `201 { item }`
 
 ### `PATCH /api/inventory/:id`
 
-- **Purpose:** Manual quantity edit (consumed something without cooking a recipe, or correction).
+- **Purpose:** Manual quantity edit or staple toggle.
 - **Auth:** user session.
-- **Body:** `{ "quantity": 1.5 }` (absolute value, not delta).
+- **Body:** `{ "quantity": 1.5 }` or `{ "alwaysAvailable": true }` or both (absolute value for quantity, not delta).
 - **Side effect:** publishes `pantry.inventory.changed` (pubsub).
 - **Response:** `200 { item }`
 
@@ -231,10 +246,11 @@ Schema: `pantry`. One Postgres user `pantry` with access to `pantry` schema only
 ```
 pantry.inventory
   id               serial       PRIMARY KEY
-  name_normalized  text         NOT NULL UNIQUE   -- lowercase, trailing-s stripped
+  name_normalized  text         NOT NULL UNIQUE   -- fuzzy-matched base noun, lowercase
   name_display     text         NOT NULL           -- original casing for display
   quantity         numeric(10,3) NOT NULL DEFAULT 0
   unit             text         NOT NULL
+  always_available boolean      NOT NULL DEFAULT false  -- v0.3: staple item, obtainable quickly
   low_stock_threshold numeric(10,3)               -- nullable; used in v0.2
   last_updated     timestamptz  NOT NULL DEFAULT NOW()
 
@@ -242,7 +258,7 @@ pantry.purchases
   id               uuid         PRIMARY KEY DEFAULT gen_random_uuid()
   items_json       jsonb        NOT NULL            -- [{ name, quantity, unit, unitPrice }]
   total_cost       numeric(10,2)
-  currency         text         NOT NULL DEFAULT 'USD'
+  currency         text         NOT NULL DEFAULT 'RWF'
   purchased_at     timestamptz  NOT NULL
   user_id          text         NOT NULL
   created_at       timestamptz  NOT NULL DEFAULT NOW()
@@ -300,4 +316,4 @@ All three open questions resolved:
 
 2. **Low-stock thresholds — RESOLVED (deferred).** v0.1 ships without them. Widget shows total count, not "running low." Per-item thresholds are a v0.2 problem — the design question (configurable vs rule-based, per-item vs category-based) isn't worth answering until there's real usage data.
 
-3. **Pluralization / synonyms — RESOLVED.** v0.1: lowercase + strip trailing `s` (e.g., "eggs" → "egg"). Known limitations: "scallions" ≠ "green onions", "1 lb chicken" won't match "chicken breast". Surface mismatches in the `recipe-partial` log and UI. Alias table planned for v0.2 once common mismatches are observed.
+3. **Pluralization / synonyms — PARTIALLY RESOLVED (v0.3).** Upgraded to fuzzy matching: descriptor stripping ("melted butter" → "butter") + substring containment in both directions. Still unsolved: synonyms ("scallions" ≠ "green onions"). Alias table still planned for v0.2 once common mismatches accumulate from real usage.

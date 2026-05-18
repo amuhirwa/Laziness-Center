@@ -1,14 +1,24 @@
 "use client"
 
-import { use, useEffect, useRef, useState } from "react"
+import { use, useEffect, useRef, useState, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { findSubRecipe } from "@/lib/subrecipe"
 
 type Ingredient = { name: string; quantity: number | null; unit: string | null }
 type Step = { text: string; durationMinutes?: number }
 
+type RecipeStub = { id: string; name: string; timeMinutes: number | null }
+
+type SubRecipeDetail = {
+  id: string
+  name: string
+  ingredients: Ingredient[]
+  steps: Step[]
+}
+
 type SessionState =
   | { phase: "starting" }
-  | { phase: "active"; sessionId: string; startedAt: number; steps: Step[]; ingredients: Ingredient[] }
+  | { phase: "active"; sessionId: string; startedAt: number; steps: Step[]; ingredients: Ingredient[]; allRecipes: RecipeStub[] }
   | { phase: "finishing" }
   | { phase: "done"; actualMinutes: number }
   | { phase: "error"; message: string }
@@ -28,25 +38,33 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
   const [currentStep, setCurrentStep] = useState(0)
   const [checkedIngs, setCheckedIngs] = useState<Set<number>>(new Set())
   const [showIngs, setShowIngs] = useState(true)
+  const [expandedSubRecipe, setExpandedSubRecipe] = useState<SubRecipeDetail | null>(null)
+  const [subRecipeStep, setSubRecipeStep] = useState(0)
+  const [loadingSubRecipe, setLoadingSubRecipe] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     async function init() {
       try {
-        const recipeRes = await fetch(`/meals/api/recipes/${id}`)
+        const [recipeRes, allRes] = await Promise.all([
+          fetch(`/meals/api/recipes/${id}`),
+          fetch("/meals/api/recipes"),
+        ])
         const recipeData = await recipeRes.json() as {
           steps: Step[]
           ingredients: Ingredient[]
         }
+        const allData = await allRes.json() as { recipes: RecipeStub[] }
         const steps = recipeData.steps ?? []
         const ingredients = recipeData.ingredients ?? []
+        const allRecipes = (allData.recipes ?? []).filter((r) => r.id !== id)
 
         if (existingSessionId) {
           const res = await fetch(`/meals/api/cook-sessions?recipeId=${id}`)
           const data = await res.json() as { session: { id: string; startedAt: string } | null }
           if (data.session) {
             const startedAt = new Date(data.session.startedAt).getTime()
-            setState({ phase: "active", sessionId: data.session.id, startedAt, steps, ingredients })
+            setState({ phase: "active", sessionId: data.session.id, startedAt, steps, ingredients, allRecipes })
           } else {
             setState({ phase: "error", message: "Session not found. It may have been cancelled." })
           }
@@ -71,7 +89,7 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
         }
 
         const data = await res.json() as { sessionId: string; startedAt: string }
-        setState({ phase: "active", sessionId: data.sessionId, startedAt: new Date(data.startedAt).getTime(), steps, ingredients })
+        setState({ phase: "active", sessionId: data.sessionId, startedAt: new Date(data.startedAt).getTime(), steps, ingredients, allRecipes })
       } catch (e) {
         setState({ phase: "error", message: String(e) })
       }
@@ -129,6 +147,17 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
 
   const steps = state.phase === "active" ? state.steps : []
   const ingredients = state.phase === "active" ? state.ingredients : []
+  const allRecipes = state.phase === "active" ? state.allRecipes : []
+
+  async function loadSubRecipe(subId: string) {
+    setLoadingSubRecipe(true)
+    try {
+      const res = await fetch(`/meals/api/recipes/${subId}`)
+      const data = await res.json() as { name: string; steps: Step[]; ingredients: Ingredient[] }
+      setExpandedSubRecipe({ id: subId, name: data.name, steps: data.steps ?? [], ingredients: data.ingredients ?? [] })
+      setSubRecipeStep(0)
+    } finally { setLoadingSubRecipe(false) }
+  }
 
   return (
     <div className="space-y-5">
@@ -152,29 +181,109 @@ export default function CookModePage({ params }: { params: Promise<{ id: string 
           </button>
           {showIngs && (
             <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {ingredients.map((ing, i) => (
-                <li key={i}
-                  onClick={() => setCheckedIngs((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(i)) next.delete(i); else next.add(i)
-                    return next
-                  })}
-                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors select-none"
-                >
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors text-xs ${
-                    checkedIngs.has(i)
-                      ? "bg-neutral-900 dark:bg-neutral-100 border-neutral-900 dark:border-neutral-100 text-white dark:text-neutral-900"
-                      : "border-neutral-300 dark:border-neutral-600"
-                  }`}>
-                    {checkedIngs.has(i) && "✓"}
-                  </span>
-                  <span className={`text-sm ${checkedIngs.has(i) ? "line-through text-neutral-400 dark:text-neutral-600" : ""}`}>
-                    {ing.quantity != null && <span className="font-mono mr-1">{ing.quantity}</span>}
-                    {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
-                    {ing.name}
-                  </span>
-                </li>
-              ))}
+              {ingredients.map((ing, i) => {
+                const subRecipe = findSubRecipe(ing.name, allRecipes)
+                const isExpanded = expandedSubRecipe !== null && subRecipe?.id === expandedSubRecipe.id
+                return (
+                  <li key={i} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                    <div
+                      onClick={() => setCheckedIngs((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(i)) next.delete(i); else next.add(i)
+                        return next
+                      })}
+                      className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors select-none"
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors text-xs ${
+                        checkedIngs.has(i)
+                          ? "bg-neutral-900 dark:bg-neutral-100 border-neutral-900 dark:border-neutral-100 text-white dark:text-neutral-900"
+                          : "border-neutral-300 dark:border-neutral-600"
+                      }`}>
+                        {checkedIngs.has(i) && "✓"}
+                      </span>
+                      <span className={`text-sm flex-1 ${checkedIngs.has(i) ? "line-through text-neutral-400 dark:text-neutral-600" : ""}`}>
+                        {ing.quantity != null && <span className="font-mono mr-1">{ing.quantity}</span>}
+                        {ing.unit && <span className="text-neutral-500 mr-1">{ing.unit}</span>}
+                        {ing.name}
+                      </span>
+                      {subRecipe && !checkedIngs.has(i) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (isExpanded) { setExpandedSubRecipe(null) } else { loadSubRecipe(subRecipe.id) }
+                          }}
+                          className={`text-xs shrink-0 px-2 py-0.5 rounded transition-colors ${
+                            isExpanded
+                              ? "bg-blue-500 text-white"
+                              : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+                          }`}
+                        >
+                          {loadingSubRecipe && !isExpanded ? "…" : isExpanded ? "hide" : "make it"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Inline sub-recipe */}
+                    {isExpanded && expandedSubRecipe && (
+                      <div className="mx-4 mb-3 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
+                        <div className="px-3 py-2 bg-blue-100 dark:bg-blue-900/40 flex items-center justify-between">
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                            {expandedSubRecipe.name}
+                          </span>
+                          <span className="text-xs text-blue-500">{expandedSubRecipe.steps.length} steps</span>
+                        </div>
+
+                        {/* Sub-recipe ingredients */}
+                        {expandedSubRecipe.ingredients.length > 0 && (
+                          <div className="px-3 py-2 border-b border-blue-200 dark:border-blue-900">
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">You'll need:</p>
+                            <ul className="space-y-0.5">
+                              {expandedSubRecipe.ingredients.map((si, si_i) => (
+                                <li key={si_i} className="text-xs text-blue-700 dark:text-blue-300">
+                                  {si.quantity != null && <span className="font-mono mr-1">{si.quantity}</span>}
+                                  {si.unit && <span className="opacity-70 mr-1">{si.unit}</span>}
+                                  {si.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Sub-recipe steps */}
+                        {expandedSubRecipe.steps.length > 0 && (
+                          <div className="px-3 py-2">
+                            <div className="flex items-center justify-between mb-1.5 text-xs text-blue-600 dark:text-blue-400">
+                              <span>Step {subRecipeStep + 1} of {expandedSubRecipe.steps.length}</span>
+                              <div className="flex gap-2">
+                                {subRecipeStep > 0 && (
+                                  <button onClick={() => setSubRecipeStep((s) => s - 1)} className="hover:text-blue-800 dark:hover:text-blue-200">← Prev</button>
+                                )}
+                                {subRecipeStep < expandedSubRecipe.steps.length - 1 && (
+                                  <button onClick={() => setSubRecipeStep((s) => s + 1)} className="hover:text-blue-800 dark:hover:text-blue-200">Next →</button>
+                                )}
+                                {subRecipeStep === expandedSubRecipe.steps.length - 1 && (
+                                  <button
+                                    onClick={() => {
+                                      setExpandedSubRecipe(null)
+                                      setCheckedIngs((prev) => { const next = new Set(prev); next.add(i); return next })
+                                    }}
+                                    className="text-green-600 dark:text-green-400 font-medium hover:text-green-700"
+                                  >
+                                    Done ✓
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                              {expandedSubRecipe.steps[subRecipeStep].text}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

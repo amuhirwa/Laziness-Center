@@ -180,7 +180,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 - **D25:** SDK v0.2 — streams implemented in Phase 5 (first stream use case). Consumer group name = subscribing module ID. DLQ after 5 failures at `lc:dlq:{moduleId}`.
 - **D26:** npm workspaces (root `package.json`) — allows modules to reference `@lc/sdk` source without pre-build. Consuming modules use `transpilePackages: ["@lc/sdk"]`.
-- **D27:** Next.js modules use `basePath` (not Caddy prefix-stripping) — Caddy routes `/meals*` → `meals:3000` without stripping; `basePath: "/meals"` in `next.config.ts` handles URL generation. `internal_api` in manifests must include the basePath: `http://meals:3000/meals/api`.
+- **D27:** Next.js modules use `basePath` (not Caddy prefix-stripping) — Caddy routes `/meals*` → `meals:3000` without stripping; `basePath: "/meals"` in `next.config.ts` handles URL generation. `internal_api` in manifests is `http://meals:3000/meals` (basePath only, no `/api` suffix — the SDK and widget fetcher append the path themselves).
 - **D28:** `MEALS_DEFAULT_USER` / `PANTRY_DEFAULT_USER` env vars for user identity in Phase 5 — Caddy forward-auth not yet wired to modules. Revisit in Phase 7 or when second user starts actively using meals/pantry.
 
 ## Known Issues / Tech Debt (updated)
@@ -201,8 +201,8 @@ sudo nginx -t && sudo systemctl reload nginx
 | `docs/sdk-design.md` | 0.2 |
 | `docs/module-srs-template.md` | 0.2 |
 | `docs/modules/manhwa.md` | 0.2.1 |
-| `docs/modules/meals.md` | 0.2 |
-| `docs/modules/pantry.md` | 0.2 |
+| `docs/modules/meals.md` | 0.3 |
+| `docs/modules/pantry.md` | 0.3 |
 | `docs/modules/tasks.md` | 0.1 |
 | `docs/modules/finance.md` | 0.1 |
 | `docs/modules/calendar.md` | 0.1 |

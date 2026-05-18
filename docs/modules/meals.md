@@ -1,11 +1,12 @@
 # Module SRS — `meals`
 
-**Version:** 0.2
-**Date:** 2026-05-17
+**Version:** 0.3
+**Date:** 2026-05-19
 **Module type:** `proxy_subpath`
-**Status:** Draft — awaiting confirmation before implementation
+**Status:** Deployed and operational
 
 **Changelog**
+- v0.3 — Post-deploy additions: TheMealDB integration (search, random, bulk category import); `thumbnail_url` column on `recipes`; suggestion filter pills (`?type=` URL param, `tag` param in algorithm); tag-based library filtering; ingredient fuzzy matching (descriptor stripping + substring fallback — "melted butter" → "butter"); cook-mode ingredient checklist; recipe edit UI (`PUT /api/recipes/:id` already existed, edit page now built); `POST /api/recipes/import` extended to parse Microdata/RDFa shapes; suggestion algorithm extended with `tag` filter param and staples-aware scoring (×1.3 in-stock bonus); `internal_api` corrected to `http://meals:3000/meals` (not `…/meals/api`).
 - v0.2 — Major revision before build: fixed health_check to full internal URL (D13); added explicit internal_api; expanded schema (steps jsonb, has_structured_steps, difficulty, is_pinned, source_url, meal_types, cooked_log rating/notes/actual_minutes/actual_servings); added cook_sessions table; pinned suggestion algorithm (weighted random with documented multipliers, MEALS_RECENT_COOK_DAYS env var); added pin/unpin endpoints, servings scaler, estimated cost (calls pantry /api/price-check), URL import (JSON-LD schema.org), cook mode endpoints; resolved both open questions.
 - v0.1 — Initial draft.
 
@@ -31,7 +32,6 @@ Meal-picker suggests what to eat based on your tastes, what you cooked recently,
 - Creating shopping tasks (that's `tasks` — v0.1 shows missing ingredients in the UI only).
 - Logging meals to a calendar (added via events when `calendar` module exists).
 - Multi-day meal planning (future sub-feature).
-- Automatic recipe discovery from external sources — **deferred to v0.2**. In v0.2, a "discover" tab fed by background scraping will let you save recipes in one tap. v0.1 ships with URL-paste import only.
 
 ## 3. User Stories
 
@@ -47,14 +47,13 @@ Meal-picker suggests what to eat based on your tastes, what you cooked recently,
 id: meals
 name: Meal Picker
 description: Pick a meal, see the recipe, know what's missing
-icon: utensils
 type: proxy_subpath
 url: /meals
-internal_api: http://meals:8000/api
-health_check: http://meals:8000/health
+internal_api: http://meals:3000/meals
+health_check: http://meals:3000/meals/health
 widgets:
   - id: tonight
-    endpoint: /widget/tonight
+    endpoint: /api/widget/tonight
     refresh_seconds: 3600
 events:
   publishes:
@@ -73,7 +72,7 @@ All endpoints are under `/meals/api/*` (the Center's Next.js app routes, served 
 
 - **Caller:** meals UI (user request).
 - **Auth:** user session.
-- **Query params:** `count` (int, default 3), `mealType` (`breakfast|lunch|dinner`, optional).
+- **Query params:** `count` (int, default 3), `mealType` (`breakfast|lunch|dinner`, optional), `tag` (string, optional — matches `tags` array on recipe, e.g. `dessert`, `vegetarian`).
 - **Response:**
   ```json
   {
@@ -83,27 +82,29 @@ All endpoints are under `/meals/api/*` (the Center's Next.js app routes, served 
         "name": "Pad Thai",
         "timeMinutes": 25,
         "difficulty": "medium",
-        "missingIngredients": ["fish sauce", "tamarind paste"],
+        "missingIngredients": ["fish sauce"],
         "pantryCheckAvailable": true
       }
     ]
   }
   ```
-  `pantryCheckAvailable: false` if pantry was unreachable — UI shows a "couldn't check pantry" indicator per suggestion.
+  `missingIngredients` excludes staple items (pantry `always_available = true`) — those count as available even when quantity is 0. `pantryCheckAvailable: false` if pantry was unreachable.
 
-**Suggestion algorithm (pinned):**
+**Suggestion algorithm (v0.3):**
 
 Pool: all recipes in the library.
 
 1. **Exclude** any recipe with a `cooked_log` entry within the last `MEALS_RECENT_COOK_DAYS` days (env var, default `7`).
 2. **Filter** by `mealType` if specified — recipes must include the requested type in their `meal_types` array.
-3. If fewer than `count` recipes remain after step 2, relax the recent-cook exclusion first, then relax the mealType filter, in that order.
-4. **Score** each remaining recipe:
+3. **Filter** by `tag` if specified — recipes must include the tag (case-insensitive) in their `tags` array.
+4. If fewer than `count` recipes remain after filters, relax the recent-cook exclusion first, then relax the filters, in that order.
+5. **Score** each remaining recipe:
    - Base score: 1.0
    - `is_pinned = true`: × 3.0
-   - Pantry availability ≥ 80% of ingredients available: × 2.0; ≥ 50%: × 1.5; < 50%: × 1.0
+   - Combined pantry fraction (in-stock + staples) ≥ 80%: × 2.0; ≥ 50%: × 1.5; < 50%: × 1.0
+   - **In-stock bonus:** if ≥ 50% of ingredients are physically in stock (not just staples): × 1.3. Ensures recipes with real pantry stock rank above equivalent staple-only recipes.
    - User average rating on `cooked_log` for this recipe: × (`avg_rating` / 3). Unrated = neutral (× 1.0).
-5. **Weighted-random** sample `count` recipes from the scored pool (higher score → higher probability, not deterministic ranking). Randomness ensures variety; weights ensure better options surface more often.
+6. **Weighted-random** sample `count` recipes from the scored pool.
 
 ---
 
@@ -189,7 +190,7 @@ Pool: all recipes in the library.
 
 - **Auth:** user session.
 - **Body:** `{ "url": "https://..." }`
-- **Behaviour:** Fetch the URL (5s timeout). Parse `<script type="application/ld+json">` blocks for `@type: "Recipe"` schema.org objects. If found, map fields to the recipe schema and return a **pre-filled but unsaved** recipe object. The client renders it in the recipe form for user review; the user saves it via `POST /api/recipes`.
+- **Behaviour:** Fetch the URL (12s timeout, browser-like UA). Parse JSON-LD, Microdata, and RDFa for `@type: "Recipe"` schema.org objects. Returns a **pre-filled but unsaved** recipe for user review. Sites behind Cloudflare/bot protection return 403 — error message tells the user to use MealDB import or add manually. `thumbnail_url` is extracted from `image` field if present.
 - **Field mapping:**
   - `name` → `name`
   - `recipeYield` → `servingsDefault` (parse first integer found)
@@ -203,6 +204,12 @@ Pool: all recipes in the library.
   - `sourceUrl` → the original URL
 - **Response on success:** `200 { recipe: { ...pre-filled fields } }` (not saved).
 - **Response on parse failure:** `422 { error: "Could not parse recipe schema", pageTitle: "..." | null }`. User fills the form manually.
+
+### `GET /api/mealdb/search` *(v0.3 — client-side only)*
+
+TheMealDB queries are made directly from the browser (public CORS API, no server proxy needed). `lib/mealdb.ts` exports `searchMealDB(query)`, `getRandomMeal()`, `getCategories()`, `getMealsByCategory(category)`, `getMealById(id)`. Imported meals are saved via `POST /api/recipes` with the parsed fields plus `thumbnailUrl`.
+
+---
 
 ### `POST /api/cook-sessions`
 
@@ -302,6 +309,7 @@ meals.recipes
   meal_types       text[]       NOT NULL DEFAULT '{}'   -- breakfast | lunch | dinner
   tags             text[]       NOT NULL DEFAULT '{}'
   source_url       text
+  thumbnail_url    text                               -- from MealDB or recipe URL image field
   created_by       text         NOT NULL               -- user email
   created_at       timestamptz  NOT NULL DEFAULT NOW()
   updated_at       timestamptz  NOT NULL DEFAULT NOW()
