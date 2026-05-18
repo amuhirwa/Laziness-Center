@@ -1,9 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import type { ImportedRecipe } from "@/lib/import"
-import { searchMealDB, getRandomMeal, mealDBToRecipe, type MealDBMeal } from "@/lib/mealdb"
+import {
+  searchMealDB, getRandomMeal, mealDBToRecipe,
+  getCategories, getMealsByCategory, getMealById,
+  type MealDBMeal, type MealDBCategory, type MealDBSummary,
+} from "@/lib/mealdb"
 
 const inputCls = "bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neutral-500"
 const btnPrimary = "px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40"
@@ -11,7 +15,7 @@ const btnSecondary = "px-4 py-2 border border-neutral-300 dark:border-neutral-70
 
 export default function ImportPage() {
   const router = useRouter()
-  const [tab, setTab] = useState<"url" | "mealdb">("mealdb")
+  const [tab, setTab] = useState<"url" | "mealdb" | "category">("mealdb")
 
   return (
     <div className="max-w-lg">
@@ -19,7 +23,7 @@ export default function ImportPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-neutral-200 dark:border-neutral-800">
-        {(["mealdb", "url"] as const).map((t) => (
+        {([["mealdb", "Search MealDB"], ["category", "By Category"], ["url", "From URL"]] as const).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -29,12 +33,14 @@ export default function ImportPage() {
                 : "border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
             }`}
           >
-            {t === "mealdb" ? "Search MealDB" : "From URL"}
+            {label}
           </button>
         ))}
       </div>
 
-      {tab === "mealdb" ? <MealDBTab router={router} /> : <UrlTab router={router} />}
+      {tab === "mealdb" && <MealDBTab router={router} />}
+      {tab === "category" && <CategoryTab router={router} />}
+      {tab === "url" && <UrlTab router={router} />}
     </div>
   )
 }
@@ -178,6 +184,209 @@ function MealDBTab({ router }: { router: ReturnType<typeof useRouter> }) {
           Search TheMealDB's library of thousands of recipes, or hit ⟳ for a random suggestion.
         </p>
       )}
+    </div>
+  )
+}
+
+// ── Category tab ──────────────────────────────────────────────────────────
+
+function CategoryTab({ router }: { router: ReturnType<typeof useRouter> }) {
+  const [view, setView] = useState<"categories" | "meals" | "importing">("categories")
+  const [categories, setCategories] = useState<MealDBCategory[]>([])
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [meals, setMeals] = useState<MealDBSummary[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const [error, setError] = useState("")
+  const [importedCount, setImportedCount] = useState(0)
+
+  useEffect(() => {
+    setLoading(true)
+    getCategories()
+      .then(setCategories)
+      .catch(() => setError("Failed to load categories"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSelectCategory(cat: string) {
+    setActiveCategory(cat)
+    setView("meals")
+    setSelected(new Set())
+    setLoading(true)
+    setError("")
+    try {
+      const results = await getMealsByCategory(cat)
+      setMeals(results)
+    } catch { setError("Failed to load meals") }
+    finally { setLoading(false) }
+  }
+
+  function toggleMeal(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    setSelected((prev) =>
+      prev.size === meals.length ? new Set() : new Set(meals.map((m) => m.idMeal))
+    )
+  }
+
+  async function handleImport() {
+    if (selected.size === 0) return
+    setView("importing")
+    const ids = [...selected]
+    setProgress({ done: 0, total: ids.length })
+    let imported = 0
+    let lastId: string | null = null
+
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const meal = await getMealById(ids[i])
+        if (meal) {
+          const recipe = mealDBToRecipe(meal)
+          const res = await fetch("/meals/api/recipes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(recipe),
+          })
+          if (res.ok) { imported++; lastId = (await res.json() as { recipeId: string }).recipeId }
+        }
+      } catch { /* skip failed individual import */ }
+      setProgress({ done: i + 1, total: ids.length })
+      // Polite delay to avoid hammering TheMealDB
+      if (i < ids.length - 1) await new Promise((r) => setTimeout(r, 150))
+    }
+
+    setImportedCount(imported)
+    if (imported === 1 && lastId) {
+      router.push(`/recipes/${lastId}`)
+    }
+  }
+
+  if (view === "importing") {
+    const done = progress?.done ?? 0
+    const total = progress?.total ?? 1
+    const finished = done === total
+    return (
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>{finished ? "Done!" : `Importing ${done} of ${total}…`}</span>
+            <span className="text-neutral-500">{done}/{total}</span>
+          </div>
+          <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-neutral-900 dark:bg-neutral-100 rounded-full transition-all duration-300"
+              style={{ width: `${(done / total) * 100}%` }}
+            />
+          </div>
+        </div>
+        {finished && (
+          <div className="space-y-3">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {importedCount} recipe{importedCount !== 1 ? "s" : ""} imported from <strong>{activeCategory}</strong>.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => router.push("/recipes")}
+                className={btnPrimary}>View library</button>
+              <button onClick={() => { setView("categories"); setSelected(new Set()) }}
+                className={btnSecondary}>Import more</button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (view === "meals") {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setView("categories")}
+            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+            ← {activeCategory}
+          </button>
+          <span className="text-xs text-neutral-500">{meals.length} meals</span>
+        </div>
+
+        {loading && <p className="text-sm text-neutral-500">Loading…</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        {meals.length > 0 && (
+          <>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox"
+                  checked={selected.size === meals.length}
+                  onChange={toggleAll}
+                  className="accent-neutral-600 dark:accent-neutral-400" />
+                Select all ({meals.length})
+              </label>
+              {selected.size > 0 && (
+                <span className="text-xs text-neutral-500">{selected.size} selected</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+              {meals.map((meal) => (
+                <label key={meal.idMeal}
+                  className={`relative rounded-xl border overflow-hidden cursor-pointer transition-colors ${
+                    selected.has(meal.idMeal)
+                      ? "border-neutral-900 dark:border-neutral-100"
+                      : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600"
+                  }`}>
+                  <input type="checkbox" className="sr-only"
+                    checked={selected.has(meal.idMeal)}
+                    onChange={() => toggleMeal(meal.idMeal)} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${meal.strMealThumb}/preview`} alt={meal.strMeal}
+                    className="w-full h-24 object-cover" />
+                  {selected.has(meal.idMeal) && (
+                    <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-neutral-900 dark:bg-neutral-100 rounded-full flex items-center justify-center text-xs text-white dark:text-neutral-900 font-bold">✓</div>
+                  )}
+                  <div className="p-2">
+                    <p className="text-xs font-medium leading-snug line-clamp-2">{meal.strMeal}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <button
+              onClick={handleImport}
+              disabled={selected.size === 0}
+              className={btnPrimary}>
+              Import {selected.size > 0 ? `${selected.size} ` : ""}recipe{selected.size !== 1 ? "s" : ""}
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // Category grid
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-neutral-500">Pick a category to browse and bulk-import recipes.</p>
+      {loading && <p className="text-sm text-neutral-500">Loading categories…</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      <div className="grid grid-cols-2 gap-3">
+        {categories.map((cat) => (
+          <button key={cat.idCategory} onClick={() => handleSelectCategory(cat.strCategory)}
+            className="text-left rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cat.strCategoryThumb} alt={cat.strCategory}
+              className="w-full h-24 object-cover" />
+            <div className="p-2.5">
+              <p className="text-sm font-medium">{cat.strCategory}</p>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

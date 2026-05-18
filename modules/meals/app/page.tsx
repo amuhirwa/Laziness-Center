@@ -8,8 +8,29 @@ import Link from "next/link"
 
 const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
 
-export default async function SuggestionsPage() {
-  const suggestions = await getSuggestions(DEFAULT_USER, 3)
+const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner"])
+
+const FILTER_PILLS = [
+  { label: "Any", value: null },
+  { label: "Breakfast", value: "breakfast" },
+  { label: "Lunch", value: "lunch" },
+  { label: "Dinner", value: "dinner" },
+  { label: "Dessert", value: "dessert" },
+  { label: "Vegetarian", value: "vegetarian" },
+  { label: "Vegan", value: "vegan" },
+]
+
+type Props = { searchParams: Promise<{ type?: string }> }
+
+export default async function SuggestionsPage({ searchParams }: Props) {
+  const { type } = await searchParams
+  const activeType = type ?? null
+
+  const isMealType = activeType && MEAL_TYPES.has(activeType)
+  const mealType = isMealType ? activeType : undefined
+  const tag = activeType && !isMealType ? activeType : undefined
+
+  const suggestions = await getSuggestions(DEFAULT_USER, 3, mealType, tag)
 
   // Fetch thumbnails for suggested recipes
   const thumbnails = new Map<string, string | null>()
@@ -22,8 +43,10 @@ export default async function SuggestionsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold">Tonight</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-semibold">
+          {activeType ? `${activeType.charAt(0).toUpperCase() + activeType.slice(1)} suggestions` : "Tonight"}
+        </h1>
         <Link
           href="/recipes/new"
           className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity"
@@ -32,19 +55,44 @@ export default async function SuggestionsPage() {
         </Link>
       </div>
 
+      {/* Filter pills */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {FILTER_PILLS.map(({ label, value }) => {
+          const active = value === activeType
+          return (
+            <Link
+              key={label}
+              href={value ? `/?type=${value}` : "/"}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                active
+                  ? "bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              {label}
+            </Link>
+          )
+        })}
+      </div>
+
       {suggestions.length === 0 ? (
         <div className="text-sm text-neutral-500 space-y-2">
-          <p>No recipes yet.</p>
-          <p>
-            <Link href="/recipes/import" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
-              Import from a URL
-            </Link>{" "}
-            or{" "}
-            <Link href="/recipes/new" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
-              add one manually
-            </Link>
-            .
-          </p>
+          {activeType ? (
+            <p>No {activeType} recipes yet. <Link href="/recipes/import" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">Import some</Link> or <Link href="/recipes/new" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">add manually</Link>.</p>
+          ) : (
+            <>
+              <p>No recipes yet.</p>
+              <p>
+                <Link href="/recipes/import" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
+                  Import from MealDB or a URL
+                </Link>{" "}
+                or{" "}
+                <Link href="/recipes/new" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
+                  add one manually
+                </Link>.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -81,7 +129,7 @@ export default async function SuggestionsPage() {
           ))}
 
           <p className="text-xs text-neutral-400 dark:text-neutral-600 pt-2">
-            Suggestions refresh hourly and exclude recipes cooked recently.
+            Suggestions are weighted by pantry availability, rating, and variety.
           </p>
         </div>
       )}

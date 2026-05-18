@@ -22,10 +22,17 @@ export type Suggestion = {
 export async function getSuggestions(
   userId: string,
   count: number,
-  mealType?: string
+  mealType?: string,
+  tag?: string
 ): Promise<Suggestion[]> {
   const allRecipes = await db.select().from(recipes)
   if (allRecipes.length === 0) return []
+
+  const matchesFilter = (r: typeof allRecipes[0]) => {
+    if (mealType && !r.mealTypes.includes(mealType)) return false
+    if (tag && !r.tags.some((t) => t.toLowerCase() === tag.toLowerCase())) return false
+    return true
+  }
 
   // Recipes cooked within the exclusion window
   const cutoff = new Date(Date.now() - RECENT_COOK_DAYS * 86400_000)
@@ -43,18 +50,11 @@ export async function getSuggestions(
     .groupBy(cookedLog.recipeId)
   const ratingMap = new Map(ratingRows.map((r) => [r.recipeId, parseFloat(r.avgRating ?? "0")]))
 
-  // Filter pool
-  let pool = allRecipes.filter((r) => !recentIds.has(r.id))
-
-  if (mealType) {
-    const typed = pool.filter((r) => r.mealTypes.includes(mealType))
-    if (typed.length >= count) {
-      pool = typed
-    } else {
-      // Relax recent-cook exclusion first
-      const allTyped = allRecipes.filter((r) => r.mealTypes.includes(mealType))
-      pool = allTyped.length >= count ? allTyped : allRecipes
-    }
+  // Filter pool — relax recent-cook exclusion if needed
+  let pool = allRecipes.filter((r) => !recentIds.has(r.id) && matchesFilter(r))
+  if (pool.length < count) {
+    const filtered = allRecipes.filter(matchesFilter)
+    pool = filtered.length > 0 ? filtered : allRecipes
   }
 
   // Check pantry availability for all ingredients in the pool at once

@@ -99,6 +99,48 @@ export function mealDBToRecipe(meal: MealDBMeal) {
   }
 }
 
+export type MealDBCategory = {
+  idCategory: string
+  strCategory: string
+  strCategoryThumb: string
+  strCategoryDescription: string
+}
+
+export type MealDBSummary = {
+  idMeal: string
+  strMeal: string
+  strMealThumb: string
+}
+
+export async function getCategories(): Promise<MealDBCategory[]> {
+  const res = await fetch("https://www.themealdb.com/api/json/v1/1/categories.php",
+    { signal: AbortSignal.timeout(8000) }
+  )
+  if (!res.ok) return []
+  const data = await res.json() as { categories: MealDBCategory[] | null }
+  return data.categories ?? []
+}
+
+export async function getMealsByCategory(category: string): Promise<MealDBSummary[]> {
+  const res = await fetch(
+    `https://www.themealdb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(category)}`,
+    { signal: AbortSignal.timeout(8000) }
+  )
+  if (!res.ok) return []
+  const data = await res.json() as { meals: MealDBSummary[] | null }
+  return data.meals ?? []
+}
+
+export async function getMealById(id: string): Promise<MealDBMeal | null> {
+  const res = await fetch(
+    `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
+    { signal: AbortSignal.timeout(8000) }
+  )
+  if (!res.ok) return null
+  const data = await res.json() as { meals: MealDBMeal[] | null }
+  return data.meals?.[0] ?? null
+}
+
 export async function searchMealDB(query: string): Promise<MealDBMeal[]> {
   const res = await fetch(
     `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`,
