@@ -16,9 +16,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     jwt({ token, profile }) {
-      if (profile?.groups) {
-        const groups = profile.groups as string[]
-        token.role = groups.includes("admin") ? "admin" : "user"
+      if (profile) {
+        const adminEmails = (process.env.ADMIN_EMAIL ?? "").split(",").map((e) => e.trim()).filter(Boolean)
+        const groups = (profile.groups as string[] | undefined) ?? []
+        const isAdmin = groups.includes("admin") || adminEmails.includes(token.email as string)
+        token.role = isAdmin ? "admin" : "user"
       }
       return token
     },
