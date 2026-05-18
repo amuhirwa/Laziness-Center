@@ -7,27 +7,35 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/chrome/topbar.js" defer></script>
   <style>
-    /* Center design tokens */
     :root {
-      --lc-bg:      #0a0a0a;
-      --lc-surface: #171717;
-      --lc-border:  #262626;
-      --lc-text:    #f5f5f5;
+      color-scheme: light dark;
+      --lc-bg:      #fafafa;
+      --lc-surface: #ffffff;
+      --lc-border:  #e5e5e5;
+      --lc-text:    #171717;
       --lc-muted:   #737373;
     }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --lc-bg:      #0a0a0a;
+        --lc-surface: #171717;
+        --lc-border:  #262626;
+        --lc-text:    #f5f5f5;
+        --lc-muted:   #737373;
+      }
+    }
     body { background: var(--lc-bg); color: var(--lc-text); }
-    /* Tailwind dark-mode via class not needed — we're always dark */
   </style>
 </head>
 <body class="min-h-screen antialiased font-sans">
 
-  <header class="border-b border-neutral-800 px-4 py-3 flex items-center justify-between">
+  <header style="border-bottom: 1px solid var(--lc-border)" class="px-4 py-3 flex items-center justify-between">
     <nav class="flex items-center gap-5 text-sm">
-      <span class="font-semibold text-neutral-100">Manhwa</span>
+      <span class="font-semibold">Manhwa</span>
       <a href="{{ request.url_for('index') }}"
-         class="text-neutral-400 hover:text-neutral-100 transition-colors">Browse</a>
+         style="color: var(--lc-muted)" class="hover:opacity-100 transition-opacity">Browse</a>
       <a href="{{ request.url_for('reading_list') }}"
-         class="text-neutral-400 hover:text-neutral-100 transition-colors">My List</a>
+         style="color: var(--lc-muted)" class="hover:opacity-100 transition-opacity">My List</a>
     </nav>
   </header>
 
