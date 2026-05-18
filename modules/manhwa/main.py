@@ -145,8 +145,7 @@ async def index(
             )
         in_list = {r["mu_id"]: r["status"] for r in rows}
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "index.html", {
         "titles": titles,
         "stale": stale,
         "genres": genres,
@@ -176,8 +175,7 @@ async def reading_list_page(request: Request):
     items = [dict(r) for r in rows]
     by_status = {s: [i for i in items if i["status"] == s]
                  for s in ("reading", "want", "completed", "dropped")}
-    return templates.TemplateResponse("list.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "list.html", {
         "by_status": by_status,
         "total": len(items),
     })

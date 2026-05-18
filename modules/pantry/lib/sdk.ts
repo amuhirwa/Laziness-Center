@@ -3,12 +3,18 @@ import { LCClient } from "@lc/sdk"
 // Use a unique key per module to avoid cross-module collisions on globalThis
 const g = globalThis as unknown as { pantryLcClient: LCClient | undefined }
 
+function buildRedisUrl(): string {
+  const pw = process.env.REDIS_PASSWORD
+  if (pw) return `redis://:${encodeURIComponent(pw)}@${process.env.REDIS_HOST ?? "redis"}:${process.env.REDIS_PORT ?? "6379"}`
+  return process.env.REDIS_URL ?? "redis://redis:6379"
+}
+
 function getClient(): LCClient {
   if (!g.pantryLcClient) {
     g.pantryLcClient = new LCClient({
       moduleId: "pantry",
       centerUrl: process.env.CENTER_INTERNAL_URL!,
-      redisUrl: process.env.REDIS_URL!,
+      redisUrl: buildRedisUrl(),
     })
   }
   return g.pantryLcClient

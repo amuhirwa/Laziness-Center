@@ -48,8 +48,10 @@ services:
       dockerfile: modules/meals/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: "postgresql://meals:${MEALS_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dmeals"
-      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      # DB passed as individual vars — avoids URL-encoding issues with base64 passwords
+      MEALS_DB_PASSWORD: "${MEALS_DB_PASSWORD}"
+      # Redis password passed separately so sdk.ts can encodeURIComponent it
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
       CENTER_INTERNAL_URL: "http://center:3000"
       MEALS_DEFAULT_USER: "${MEALS_DEFAULT_USER}"
       MEALS_RECENT_COOK_DAYS: "7"
@@ -67,8 +69,10 @@ services:
       dockerfile: modules/pantry/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: "postgresql://pantry:${PANTRY_DB_PASSWORD}@postgres:5432/laziness?options=-csearch_path%3Dpantry"
-      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      # DB passed as individual vars — avoids URL-encoding issues with base64 passwords
+      PANTRY_DB_PASSWORD: "${PANTRY_DB_PASSWORD}"
+      # Redis password passed separately so sdk.ts can encodeURIComponent it
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
       CENTER_INTERNAL_URL: "http://center:3000"
       PANTRY_DEFAULT_USER: "${PANTRY_DEFAULT_USER}"
       NODE_ENV: production
