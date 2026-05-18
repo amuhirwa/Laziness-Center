@@ -30,11 +30,18 @@ export default async function RecipeLibraryPage() {
         <div className="space-y-px">
           {allRecipes.map((r) => (
             <Link key={r.id} href={`/recipes/${r.id}`}
-              className="flex items-center justify-between gap-4 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-              <div className="min-w-0">
+              className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
+              {r.thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r.thumbnailUrl} alt={r.name}
+                  className="w-10 h-10 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium truncate">{r.name}</span>
-                  {r.isPinned && <span className="text-xs text-yellow-600">★ pinned</span>}
+                  {r.isPinned && <span className="text-xs text-yellow-600">★</span>}
                 </div>
                 <div className="flex gap-3 mt-0.5 text-xs text-neutral-500">
                   {r.timeMinutes && <span>{r.timeMinutes} min</span>}

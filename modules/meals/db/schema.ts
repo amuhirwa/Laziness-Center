@@ -20,6 +20,7 @@ export const recipes = pgTable("recipes", {
   mealTypes: text("meal_types").array().notNull().default(sql`ARRAY[]::text[]`),
   tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
   sourceUrl: text("source_url"),
+  thumbnailUrl: text("thumbnail_url"),
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -49,6 +49,13 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
 
   return (
     <div className="space-y-6">
+      {/* Thumbnail */}
+      {recipe.thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={recipe.thumbnailUrl} alt={recipe.name}
+          className="w-full h-52 object-cover rounded-xl" />
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>

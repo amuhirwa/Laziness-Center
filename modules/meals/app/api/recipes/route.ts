@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     steps?: Step[]
     ingredients?: Ingredient[]
     sourceUrl?: string
+    thumbnailUrl?: string
   }
 
   if (!body.name?.trim()) return NextResponse.json({ error: "name required" }, { status: 400 })
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
     hasStructuredSteps,
     ingredients: body.ingredients ?? [],
     sourceUrl: body.sourceUrl,
+    thumbnailUrl: body.thumbnailUrl,
     createdBy: DEFAULT_USER,
   }).returning({ id: recipes.id })
 

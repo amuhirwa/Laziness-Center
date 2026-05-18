@@ -1,12 +1,24 @@
 export const dynamic = "force-dynamic"
 
 import { getSuggestions } from "@/lib/suggest"
+import { db } from "@/db"
+import { recipes } from "@/db/schema"
+import { inArray } from "drizzle-orm"
 import Link from "next/link"
 
 const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
 
 export default async function SuggestionsPage() {
   const suggestions = await getSuggestions(DEFAULT_USER, 3)
+
+  // Fetch thumbnails for suggested recipes
+  const thumbnails = new Map<string, string | null>()
+  if (suggestions.length > 0) {
+    const rows = await db.select({ id: recipes.id, thumbnailUrl: recipes.thumbnailUrl })
+      .from(recipes)
+      .where(inArray(recipes.id, suggestions.map((s) => s.recipeId)))
+    rows.forEach((r) => thumbnails.set(r.id, r.thumbnailUrl ?? null))
+  }
 
   return (
     <div>
@@ -40,9 +52,14 @@ export default async function SuggestionsPage() {
             <Link
               key={s.recipeId}
               href={`/recipes/${s.recipeId}`}
-              className="block p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="block rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors overflow-hidden"
             >
-              <div className="flex items-start justify-between gap-4">
+              {thumbnails.get(s.recipeId) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnails.get(s.recipeId)!} alt={s.name}
+                  className="w-full h-36 object-cover" />
+              )}
+              <div className="flex items-start justify-between gap-4 p-4">
                 <div>
                   <h2 className="font-medium">{s.name}</h2>
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-neutral-500">
@@ -60,6 +77,7 @@ export default async function SuggestionsPage() {
                 </div>
                 <span className="text-neutral-400 shrink-0">→</span>
               </div>
+            </div>
             </Link>
           ))}
 

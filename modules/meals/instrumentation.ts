@@ -58,6 +58,9 @@ export async function register() {
     )
   `)
 
+  // ── Schema migrations (idempotent) ───────────────────────────────────────
+  await db.execute(sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS thumbnail_url TEXT`)
+
   // ── Subscribe to pantry.inventory.changed (pubsub) ────────────────────────
   const { lc } = await import("./lib/sdk")
   const { suggestionCache } = await import("./db/schema")

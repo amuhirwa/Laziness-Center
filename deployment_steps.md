@@ -99,14 +99,13 @@ Manhwa:
 id: manhwa
 name: Manhwa
 description: Browse and track manhwa from MangaUpdates
-icon: book-open
 type: proxy_subpath
 url: /manhwa
-internal_api: http://manhwa:8000/api
+internal_api: http://manhwa:8000
 health_check: http://manhwa:8000/health
 widgets:
   - id: reading
-    endpoint: /widget/reading
+    endpoint: /api/widget/reading
     refresh_seconds: 3600
 Meals:
 
@@ -114,10 +113,9 @@ Meals:
 id: meals
 name: Meal Picker
 description: Pick a meal, see the recipe, know what's missing
-icon: utensils
 type: proxy_subpath
 url: /meals
-internal_api: http://meals:3000/meals/api
+internal_api: http://meals:3000/meals
 health_check: http://meals:3000/meals/health
 widgets:
   - id: tonight
@@ -134,10 +132,9 @@ Pantry:
 id: pantry
 name: Pantry
 description: What's in stock, what's running low
-icon: package
 type: proxy_subpath
 url: /pantry
-internal_api: http://pantry:3000/pantry/api
+internal_api: http://pantry:3000/pantry
 health_check: http://pantry:3000/pantry/health
 widgets:
   - id: low-stock

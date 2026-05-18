@@ -81,10 +81,11 @@ async def _scrape_page(
 
     titles = []
     for row in rows:
-        items = row.find_all(True, class_=lambda c: c and any("text" in x for x in c))
+        # "text" is a static MU class (not a CSS-module hash) — use exact membership
+        items = row.find_all(True, class_=lambda c: c and "text" in c)
         if len(items) < 4:
-            if not titles:  # only print once per page
-                print(f"[manhwa scraper] first row has {len(items)} items, need 4. Row html: {str(row)[:500]}", flush=True)
+            if not titles:
+                print(f"[manhwa scraper] first row has {len(items)} .text items; row html: {str(row)[:500]}", flush=True)
             continue
 
         link_el = items[0].find("a")

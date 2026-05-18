@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { inventory } from "@/db/schema"
-import { inArray } from "drizzle-orm"
 import { lc } from "@/lib/sdk"
-import { normalizeIngredient } from "@/lib/normalize"
+import { normalizeIngredient, ingredientMatches } from "@/lib/normalize"
 
 export async function POST(request: NextRequest) {
   const result = await lc.verifyToken(request.headers.get("authorization") ?? "")
@@ -15,25 +14,20 @@ export async function POST(request: NextRequest) {
   }
   const items = body.items as string[]
 
-  // Build normalized→original map
-  const nameMap = new Map<string, string>(items.map((name) => [normalizeIngredient(name), name]))
-  const normalizedNames = [...nameMap.keys()]
+  // Fetch all pantry items with stock > 0
+  const rows = await db.select().from(inventory)
+  const inStock = rows
+    .filter((r) => parseFloat(r.quantity as string) > 0)
+    .map((r) => r.nameNormalized)
 
-  const rows = await db
-    .select()
-    .from(inventory)
-    .where(inArray(inventory.nameNormalized, normalizedNames))
-
-  // Items with quantity > 0 are available
   const available: string[] = []
   const missing: string[] = []
-  const availableNorm = new Set(
-    rows.filter((r) => parseFloat(r.quantity as string) > 0).map((r) => r.nameNormalized)
-  )
 
-  for (const [norm, original] of nameMap) {
-    if (availableNorm.has(norm)) available.push(original)
-    else missing.push(original)
+  for (const name of items) {
+    const norm = normalizeIngredient(name)
+    const found = inStock.some((pantryNorm) => ingredientMatches(norm, pantryNorm))
+    if (found) available.push(name)
+    else missing.push(name)
   }
 
   return NextResponse.json({ available, missing, low: [] })
