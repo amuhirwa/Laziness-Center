@@ -4,7 +4,7 @@
 {% block content %}
 
 {# ── Filter form ─────────────────────────────────────────────────────────── #}
-<form method="GET" action="{{ request.url_for('index') }}"
+<form method="GET" action="/manhwa/"
       class="mb-6 flex flex-wrap gap-3 items-end text-sm">
 
   <div class="flex flex-col gap-1">
@@ -94,7 +94,7 @@
           <span class="text-xs px-2 py-1 rounded-md bg-neutral-800 text-neutral-400
                        capitalize">{{ in_list[t.mu_id] }}</span>
         {% else %}
-          <form method="POST" action="{{ request.url_for('add_to_list') }}"
+          <form method="POST" action="/manhwa/list/add"
                 class="flex gap-1">
             <input type="hidden" name="mu_id" value="{{ t.mu_id }}">
             <select name="status" style="padding:0.25rem 0.5rem;font-size:0.75rem">

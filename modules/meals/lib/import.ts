@@ -43,12 +43,22 @@ export async function importFromUrl(url: string): Promise<ImportResult> {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(12000),
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; LazinessCenter/1.0; +https://lazy.lovey.tv)",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
       },
     })
-    if (!res.ok) return { success: false, error: `URL returned ${res.status}`, pageTitle: null }
+    if (!res.ok) {
+      const blocked = res.status === 403 || res.status === 429
+      return {
+        success: false,
+        error: blocked
+          ? `${res.status} — site blocks server-side requests (Cloudflare/bot protection). Use a site without bot protection, or add the recipe manually`
+          : `URL returned ${res.status}`,
+        pageTitle: null,
+      }
+    }
     html = await res.text()
   } catch (e) {
     return { success: false, error: String(e), pageTitle: null }

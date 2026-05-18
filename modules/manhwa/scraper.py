@@ -5,17 +5,16 @@ Key additions: async httpx, mu_id extraction from series URL, catalog upsert.
 import asyncio
 import hashlib
 import json
+import logging
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
 
+log = logging.getLogger(__name__)
+
 MU_BASE = "https://www.mangaupdates.com"
-# CSS-module class for series rows in list view. Stable as long as MU doesn't
-# rebuild their frontend; update here if the selector breaks.
-ROW_SELECTOR = ".series-list-module__5iN2dq__alt"
-ITEM_SELECTOR = ".text"
 
 
 def make_params_hash(genres: list[str], excluded: list[str], min_rating: float, start_year: int) -> str:
@@ -62,13 +61,25 @@ async def _scrape_page(
         return []
 
     soup = BeautifulSoup(r.text, "html.parser")
-    rows = soup.select(ROW_SELECTOR)
+
+    # Try progressively looser selectors — the CSS-module hash changes on MU rebuilds.
+    # 1. Any div/tr whose class contains "alt" (catches series-list-module__XXXX__alt)
+    rows = [el for el in soup.find_all(True)
+            if any("__alt" in c for c in el.get("class", []))]
+    # 2. Fallback: rows inside an element whose class contains "series-list"
     if not rows:
+        container = soup.find(True, class_=lambda c: c and any("series-list" in x for x in c))
+        if container:
+            rows = container.find_all(True, class_=lambda c: c and any("alt" in x for x in c))
+    if not rows:
+        # Log a snippet so we can update the selector if MU changed their markup
+        log.warning("MU scraper: no rows matched on page %s. First 2000 chars: %s",
+                    url, r.text[:2000])
         return []
 
     titles = []
     for row in rows:
-        items = row.select(ITEM_SELECTOR)
+        items = row.find_all(True, class_=lambda c: c and any("text" in x for x in c))
         if len(items) < 4:
             continue
 

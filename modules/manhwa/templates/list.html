@@ -11,9 +11,7 @@
 {% if total == 0 %}
   <p class="text-sm text-neutral-500">
     Nothing saved yet.
-    <a href="{{ request.url_for('index') }}" class="text-neutral-300 underline hover:text-white">
-      Browse manhwa
-    </a>.
+    <a href="/manhwa/" style="color:var(--lc-text);text-decoration:underline">Browse manhwa</a>.
   </p>
 {% endif %}
 
@@ -22,29 +20,29 @@
   {% set items = by_status[status_key] %}
   {% if items %}
   <section class="mb-8">
-    <h2 class="text-sm font-medium text-neutral-400 mb-3 flex items-center gap-2">
+    <h2 class="text-sm font-medium mb-3 flex items-center gap-2" style="color:var(--lc-muted)">
       {{ label }}
-      <span class="text-neutral-600 font-normal">{{ items | length }}</span>
+      <span class="font-normal">{{ items | length }}</span>
     </h2>
 
     <div class="space-y-2">
       {% for item in items %}
-      <div class="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
+      <div style="border:1px solid var(--lc-border);background:var(--lc-surface);border-radius:0.5rem;overflow:hidden">
 
         {# Summary row #}
         <div class="flex items-start justify-between gap-4 px-4 py-3">
           <div class="min-w-0">
             <a href="{{ item.mu_url }}" target="_blank" rel="noopener noreferrer"
-               class="text-sm font-medium text-neutral-100 hover:text-white truncate block">
-              {{ item.title }} <span class="text-neutral-700 text-xs">↗</span>
+               class="text-sm font-medium truncate block hover:opacity-80 transition-opacity">
+              {{ item.title }} <span style="color:var(--lc-muted)" class="text-xs">↗</span>
             </a>
-            <div class="flex flex-wrap items-center gap-3 mt-1 text-xs text-neutral-500">
+            <div class="flex flex-wrap items-center gap-3 mt-1 text-xs" style="color:var(--lc-muted)">
               <span>{{ item.year or "—" }}</span>
               {% if item.site_rating %}
                 <span>MU {{ "%.2f"|format(item.site_rating) }}</span>
               {% endif %}
               {% if item.my_rating %}
-                <span class="text-neutral-300">My {{ "%.1f"|format(item.my_rating) }}/10</span>
+                <span>My {{ "%.1f"|format(item.my_rating) }}/10</span>
               {% endif %}
               {% if item.current_chapter %}
                 <span>Ch. {{ item.current_chapter }}</span>
@@ -54,33 +52,29 @@
               {% endif %}
             </div>
             {% if item.notes %}
-              <p class="mt-1 text-xs text-neutral-600 italic truncate">{{ item.notes }}</p>
+              <p class="mt-1 text-xs italic truncate" style="color:var(--lc-muted)">{{ item.notes }}</p>
             {% endif %}
           </div>
 
           {# Quick-delete #}
-          <form method="POST"
-                action="{{ request.url_for('delete_list_item', item_id=item.id) }}"
-                class="shrink-0">
+          <form method="POST" action="/manhwa/list/{{ item.id }}/delete" class="shrink-0">
             <button type="submit"
-                    class="text-xs text-neutral-700 hover:text-red-400 transition-colors px-1"
+                    class="text-xs px-1 transition-colors hover:text-red-500"
+                    style="color:var(--lc-muted)"
                     onclick="return confirm('Remove {{ item.title }}?')">✕</button>
           </form>
         </div>
 
         {# Inline edit (collapsible) #}
-        <details class="border-t border-neutral-800">
-          <summary class="px-4 py-2 text-xs text-neutral-600 hover:text-neutral-400
-                          cursor-pointer select-none transition-colors">Edit</summary>
-          <form method="POST"
-                action="{{ request.url_for('update_list_item', item_id=item.id) }}"
+        <details style="border-top:1px solid var(--lc-border)">
+          <summary class="px-4 py-2 text-xs cursor-pointer select-none transition-colors hover:opacity-80"
+                   style="color:var(--lc-muted)">Edit</summary>
+          <form method="POST" action="/manhwa/list/{{ item.id }}/update"
                 class="px-4 pb-4 pt-2 flex flex-wrap gap-3 items-end text-sm">
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-neutral-500">Status</label>
-              <select name="status"
-                      class="bg-neutral-800 border border-neutral-700 rounded-md px-2 py-1.5
-                             text-xs text-neutral-100 focus:outline-none">
+              <label class="text-xs" style="color:var(--lc-muted)">Status</label>
+              <select name="status" style="padding:0.25rem 0.5rem;font-size:0.75rem">
                 {% for s in ["want", "reading", "completed", "dropped"] %}
                   <option value="{{ s }}" {% if item.status == s %}selected{% endif %}>
                     {{ s | capitalize }}
@@ -90,35 +84,27 @@
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-neutral-500">Chapter</label>
+              <label class="text-xs" style="color:var(--lc-muted)">Chapter</label>
               <input name="current_chapter" type="number" min="0"
-                     value="{{ item.current_chapter or '' }}"
-                     placeholder="—"
-                     class="bg-neutral-800 border border-neutral-700 rounded-md px-2 py-1.5
-                            text-xs text-neutral-100 focus:outline-none w-20">
+                     value="{{ item.current_chapter or '' }}" placeholder="—"
+                     class="w-20">
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-neutral-500">My rating (0–10)</label>
+              <label class="text-xs" style="color:var(--lc-muted)">My rating (0–10)</label>
               <input name="my_rating" type="number" min="0" max="10" step="0.5"
-                     value="{{ item.my_rating or '' }}"
-                     placeholder="—"
-                     class="bg-neutral-800 border border-neutral-700 rounded-md px-2 py-1.5
-                            text-xs text-neutral-100 focus:outline-none w-24">
+                     value="{{ item.my_rating or '' }}" placeholder="—"
+                     class="w-24">
             </div>
 
             <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
-              <label class="text-xs text-neutral-500">Notes</label>
+              <label class="text-xs" style="color:var(--lc-muted)">Notes</label>
               <input name="notes" type="text"
-                     value="{{ item.notes or '' }}"
-                     placeholder="optional"
-                     class="bg-neutral-800 border border-neutral-700 rounded-md px-2 py-1.5
-                            text-xs text-neutral-100 focus:outline-none w-full">
+                     value="{{ item.notes or '' }}" placeholder="optional"
+                     class="w-full">
             </div>
 
-            <button type="submit"
-                    class="px-3 py-1.5 text-xs bg-neutral-100 text-neutral-900 rounded-md
-                           font-medium hover:bg-white transition-colors">
+            <button type="submit" class="lc-btn" style="font-size:0.75rem;padding:0.375rem 0.75rem">
               Save
             </button>
           </form>
