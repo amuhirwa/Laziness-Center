@@ -62,7 +62,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
             {recipe.mealTypes.length > 0 && <span>{recipe.mealTypes.join(", ")}</span>}
           </div>
         </div>
-        <Link href={`/meals/recipes/${id}/edit`}
+        <Link href={`/recipes/${id}/edit`}
           className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors shrink-0">
           Edit
         </Link>
@@ -72,7 +72,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
       <div className="flex items-center gap-3 text-sm">
         <span className="text-neutral-400">Servings:</span>
         {[1, 2, 3, 4, 6].map((n) => (
-          <Link key={n} href={`/meals/recipes/${id}?servings=${n}`}
+          <Link key={n} href={`/recipes/${id}?servings=${n}`}
             className={`px-2 py-0.5 rounded ${requestedServings === n
               ? "bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 font-medium"
               : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"}`}>
@@ -101,7 +101,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
         <div className="flex items-center justify-between p-3 rounded-lg border border-yellow-700 bg-yellow-900/20 text-sm">
           <span className="text-yellow-400">You have an active cook session for this recipe.</span>
           <div className="flex gap-2">
-            <Link href={`/meals/recipes/${id}/cook?session=${session.id}`}
+            <Link href={`/recipes/${id}/cook?session=${session.id}`}
               className="text-xs px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-500">
               Resume
             </Link>
@@ -162,7 +162,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
       {!session && (
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <Link
-            href={`/meals/recipes/${id}/cook`}
+            href={`/recipes/${id}/cook`}
             className="inline-block px-6 py-2.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Start cooking

@@ -52,7 +52,7 @@ export default function NewRecipePage() {
       })
       if (!res.ok) { const b = await res.json(); setError(b.error ?? "Failed"); return }
       const data = await res.json() as { recipeId: string }
-      router.push(`/meals/recipes/${data.recipeId}`)
+      router.push(`/recipes/${data.recipeId}`)
     } catch (err) { setError(String(err)) }
     finally { setLoading(false) }
   }

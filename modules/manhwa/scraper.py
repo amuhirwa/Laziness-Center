@@ -72,15 +72,19 @@ async def _scrape_page(
         if container:
             rows = container.find_all(True, class_=lambda c: c and any("alt" in x for x in c))
     if not rows:
-        # Log a snippet so we can update the selector if MU changed their markup
-        log.warning("MU scraper: no rows matched on page %s. First 2000 chars: %s",
-                    url, r.text[:2000])
+        print(f"[manhwa scraper] no rows matched on {url}", flush=True)
+        print(f"[manhwa scraper] HTTP {r.status_code}, first 3000 chars of body:", flush=True)
+        print(r.text[:3000], flush=True)
         return []
+
+    print(f"[manhwa scraper] found {len(rows)} rows on {url}", flush=True)
 
     titles = []
     for row in rows:
         items = row.find_all(True, class_=lambda c: c and any("text" in x for x in c))
         if len(items) < 4:
+            if not titles:  # only print once per page
+                print(f"[manhwa scraper] first row has {len(items)} items, need 4. Row html: {str(row)[:500]}", flush=True)
             continue
 
         link_el = items[0].find("a")

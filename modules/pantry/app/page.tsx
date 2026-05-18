@@ -13,7 +13,7 @@ export default async function InventoryPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold">Inventory</h1>
         <Link
-          href="/pantry/purchase"
+          href="/purchase"
           className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity"
         >
           + Log purchase
@@ -23,7 +23,7 @@ export default async function InventoryPage() {
       {items.length === 0 ? (
         <p className="text-sm text-neutral-500">
           No items yet.{" "}
-          <Link href="/pantry/purchase" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
+          <Link href="/purchase" className="text-neutral-600 dark:text-neutral-300 underline hover:text-neutral-900 dark:hover:text-white">
             Log your first purchase
           </Link>
           .

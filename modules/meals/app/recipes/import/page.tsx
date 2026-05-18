@@ -44,7 +44,7 @@ export default function ImportPage() {
     })
     if (res.ok) {
       const data = await res.json() as { recipeId: string }
-      router.push(`/meals/recipes/${data.recipeId}`)
+      router.push(`/recipes/${data.recipeId}`)
     } else {
       setError("Failed to save recipe")
       setSaving(false)
