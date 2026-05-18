@@ -2,7 +2,8 @@ import { db } from "@/db"
 import { modules } from "@/db/schema"
 import { parseManifest } from "@/lib/manifest"
 import Link from "next/link"
-import { deleteModule, pingModuleHealth, toggleModule } from "./actions"
+import { pingModuleHealth, toggleModule } from "./actions"
+import { DeleteButton } from "./delete-button"
 
 export default async function AdminModulesPage() {
   const allModules = await db.select().from(modules).orderBy(modules.id)
@@ -86,17 +87,7 @@ export default async function AdminModulesPage() {
                         {mod.enabled ? "Disable" : "Enable"}
                       </button>
                     </form>
-                    <form action={deleteModule.bind(null, mod.id)}>
-                      <button
-                        type="submit"
-                        className="px-3 py-2 min-h-11 text-neutral-500 hover:text-red-500 transition-colors"
-                        onClick={(e) => {
-                          if (!confirm(`Delete ${name}?`)) e.preventDefault()
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </form>
+                    <DeleteButton moduleId={mod.id} name={name} />
                   </div>
                 </div>
 
