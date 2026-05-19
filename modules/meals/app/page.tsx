@@ -5,8 +5,8 @@ import { db } from "@/db"
 import { recipes } from "@/db/schema"
 import { inArray } from "drizzle-orm"
 import Link from "next/link"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { headers } from "next/headers"
+import { getUserId } from "@/lib/identity"
 
 const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner"])
 
@@ -30,7 +30,8 @@ export default async function SuggestionsPage({ searchParams }: Props) {
   const mealType = isMealType ? activeType : undefined
   const tag = activeType && !isMealType ? activeType : undefined
 
-  const suggestions = await getSuggestions(DEFAULT_USER, 3, mealType, tag)
+  const userId = getUserId(await headers())
+  const suggestions = await getSuggestions(userId, 3, mealType, tag)
 
   // Fetch thumbnails for suggested recipes
   const thumbnails = new Map<string, string | null>()

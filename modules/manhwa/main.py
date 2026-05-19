@@ -13,8 +13,19 @@ from auth import verify_service_token
 from db import get_pool, setup_schema
 from scraper import make_params_hash, scrape_all, upsert_titles
 
-DEFAULT_USER = os.environ.get("MANHWA_DEFAULT_USER", "")
+_DEFAULT_USER_ENV = os.environ.get("MANHWA_DEFAULT_USER", "")
 CACHE_TTL_S = 6 * 3600  # 6 hours
+
+
+def get_user_id(request: Request) -> str:
+    """Read user identity from forward-auth headers; fall back to env var in dev."""
+    email = request.headers.get("remote-email") or request.headers.get("remote-user")
+    if email:
+        return email
+    if os.environ.get("NODE_ENV") == "production" or os.environ.get("ENV") == "production":
+        import logging
+        logging.warning("[manhwa] user identity from env fallback — forward-auth not configured")
+    return _DEFAULT_USER_ENV
 # Set to /manhwa in production (Caddy strips the prefix before forwarding).
 # Leave empty in local dev so url_for() generates plain paths on localhost.
 ROOT_PATH = os.environ.get("MANHWA_ROOT_PATH", "")
@@ -137,11 +148,12 @@ async def index(
         )
 
     # Mark titles already on the user's list
+    user_id = get_user_id(request)
     in_list: set[str] = set()
-    if DEFAULT_USER:
+    if user_id:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT mu_id, status FROM reading_list WHERE user_id = $1", DEFAULT_USER
+                "SELECT mu_id, status FROM reading_list WHERE user_id = $1", user_id
             )
         in_list = {r["mu_id"]: r["status"] for r in rows}
 
@@ -158,6 +170,7 @@ async def index(
 
 @app.get("/list", name="reading_list", response_class=HTMLResponse)
 async def reading_list_page(request: Request):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch(
@@ -170,7 +183,7 @@ async def reading_list_page(request: Request):
             WHERE rl.user_id = $1
             ORDER BY rl.updated_at DESC
             """,
-            DEFAULT_USER,
+            user_id,
         )
     items = [dict(r) for r in rows]
     by_status = {s: [i for i in items if i["status"] == s]
@@ -189,6 +202,7 @@ async def add_to_list(
 ):
     if status not in ("want", "reading", "completed", "dropped"):
         raise HTTPException(status_code=400, detail="invalid status")
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT 1 FROM titles WHERE mu_id = $1", mu_id)
@@ -200,7 +214,7 @@ async def add_to_list(
             VALUES ($1, $2, $3)
             ON CONFLICT (user_id, mu_id) DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()
             """,
-            DEFAULT_USER, mu_id, status,
+            user_id, mu_id, status,
         )
     return RedirectResponse(url=request.url_for("index"), status_code=303)
 
@@ -214,6 +228,7 @@ async def update_list_item(
     my_rating: Optional[float] = Form(None),
     notes: Optional[str] = Form(None),
 ):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
@@ -227,18 +242,19 @@ async def update_list_item(
                 last_read_at    = CASE WHEN $4 IS NOT NULL THEN NOW() ELSE last_read_at END
             WHERE id = $1 AND user_id = $2
             """,
-            item_id, DEFAULT_USER, status, current_chapter, my_rating, notes,
+            item_id, user_id, status, current_chapter, my_rating, notes,
         )
     return RedirectResponse(url=request.url_for("reading_list"), status_code=303)
 
 
 @app.post("/list/{item_id}/delete", name="delete_list_item")
 async def delete_list_item(request: Request, item_id: int):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
             "DELETE FROM reading_list WHERE id = $1 AND user_id = $2",
-            item_id, DEFAULT_USER,
+            item_id, user_id,
         )
     return RedirectResponse(url=request.url_for("reading_list"), status_code=303)
 
@@ -285,7 +301,8 @@ async def api_search(
 
 
 @app.get("/api/list")
-async def api_list():
+async def api_list(request: Request):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch(
@@ -294,15 +311,16 @@ async def api_list():
             FROM reading_list rl JOIN titles t ON rl.mu_id = t.mu_id
             WHERE rl.user_id = $1 ORDER BY rl.updated_at DESC
             """,
-            DEFAULT_USER,
+            user_id,
         )
     return {"items": [dict(r) for r in rows]}
 
 
 @app.post("/api/list", status_code=201)
-async def api_add_to_list(body: AddToListRequest):
+async def api_add_to_list(request: Request, body: AddToListRequest):
     if body.status not in ("want", "reading", "completed", "dropped"):
         raise HTTPException(status_code=400, detail="invalid status")
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT 1 FROM titles WHERE mu_id = $1", body.mu_id)
@@ -315,7 +333,7 @@ async def api_add_to_list(body: AddToListRequest):
                 VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *
                 """,
-                DEFAULT_USER, body.mu_id, body.status,
+                user_id, body.mu_id, body.status,
                 body.current_chapter, body.my_rating, body.notes,
             )
         except Exception:
@@ -324,7 +342,8 @@ async def api_add_to_list(body: AddToListRequest):
 
 
 @app.patch("/api/list/{item_id}")
-async def api_update_list_item(item_id: int, body: UpdateListRequest):
+async def api_update_list_item(request: Request, item_id: int, body: UpdateListRequest):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -339,7 +358,7 @@ async def api_update_list_item(item_id: int, body: UpdateListRequest):
             WHERE id = $1 AND user_id = $2
             RETURNING *
             """,
-            item_id, DEFAULT_USER, body.status, body.current_chapter, body.my_rating, body.notes,
+            item_id, user_id, body.status, body.current_chapter, body.my_rating, body.notes,
         )
     if not row:
         raise HTTPException(status_code=404)
@@ -347,12 +366,13 @@ async def api_update_list_item(item_id: int, body: UpdateListRequest):
 
 
 @app.delete("/api/list/{item_id}", status_code=204)
-async def api_delete_list_item(item_id: int):
+async def api_delete_list_item(request: Request, item_id: int):
+    user_id = get_user_id(request)
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
             "DELETE FROM reading_list WHERE id = $1 AND user_id = $2",
-            item_id, DEFAULT_USER,
+            item_id, user_id,
         )
 
 
@@ -364,7 +384,7 @@ async def widget_reading(request: Request):
 
     pool = await get_pool()
 
-    if DEFAULT_USER:
+    if _DEFAULT_USER_ENV:
         async with pool.acquire() as conn:
             counts = await conn.fetchrow(
                 """
@@ -373,7 +393,7 @@ async def widget_reading(request: Request):
                     COUNT(*) FILTER (WHERE status = 'want')    AS want_count
                 FROM reading_list WHERE user_id = $1
                 """,
-                DEFAULT_USER,
+                _DEFAULT_USER_ENV,
             )
             top = await conn.fetchrow(
                 """
@@ -382,7 +402,7 @@ async def widget_reading(request: Request):
                 WHERE rl.user_id = $1 AND rl.status = 'want'
                 ORDER BY t.site_rating DESC NULLS LAST LIMIT 1
                 """,
-                DEFAULT_USER,
+                _DEFAULT_USER_ENV,
             )
             if not top:
                 top = await conn.fetchrow(
@@ -393,7 +413,7 @@ async def widget_reading(request: Request):
                     )
                     ORDER BY site_rating DESC NULLS LAST LIMIT 1
                     """,
-                    DEFAULT_USER,
+                    _DEFAULT_USER_ENV,
                 )
 
         r_count = counts["reading_count"] if counts else 0

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { cookedLog, recipes } from "@/db/schema"
 import { and, desc, eq } from "drizzle-orm"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { getUserId } from "@/lib/identity"
 
 export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(request.nextUrl.searchParams.get("limit") ?? "20"), 100)
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     .leftJoin(recipes, eq(cookedLog.recipeId, recipes.id))
     .where(
       and(
-        eq(cookedLog.userId, DEFAULT_USER),
+        eq(cookedLog.userId, getUserId(request.headers)),
         recipeId ? eq(cookedLog.recipeId, recipeId) : undefined
       )
     )

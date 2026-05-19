@@ -10,14 +10,26 @@ http://lazy.lovey.tv {
     respond @internal 403
 
     handle /meals* {
+        forward_auth pocket-id:1411 {
+            uri /api/auth/verify
+            copy_headers Remote-User Remote-Email Remote-Name Remote-Groups
+        }
         reverse_proxy meals:3000
     }
 
     handle /pantry* {
+        forward_auth pocket-id:1411 {
+            uri /api/auth/verify
+            copy_headers Remote-User Remote-Email Remote-Name Remote-Groups
+        }
         reverse_proxy pantry:3000
     }
 
     handle /manhwa* {
+        forward_auth pocket-id:1411 {
+            uri /api/auth/verify
+            copy_headers Remote-User Remote-Email Remote-Name Remote-Groups
+        }
         uri strip_prefix /manhwa
         reverse_proxy manhwa:8000 {
             header_up X-Forwarded-Proto https

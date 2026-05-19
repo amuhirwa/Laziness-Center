@@ -1,5 +1,13 @@
 import { pgTable, text, boolean, timestamp, jsonb, primaryKey } from "drizzle-orm/pg-core"
 
+export const users = pgTable("users", {
+  email: text("email").primaryKey(),
+  name: text("name"),
+  role: text("role").notNull().default("user").$type<"admin" | "user">(),
+  last_login: timestamp("last_login", { withTimezone: true }).notNull().defaultNow(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const modules = pgTable("modules", {
   id: text("id").primaryKey(),
   manifest_yaml: text("manifest_yaml").notNull(),

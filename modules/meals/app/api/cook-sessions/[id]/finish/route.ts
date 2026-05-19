@@ -4,8 +4,7 @@ import { cookSessions, cookedLog, recipes } from "@/db/schema"
 import type { Ingredient } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
 import { lc } from "@/lib/sdk"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { getUserId } from "@/lib/identity"
 
 export async function POST(
   request: NextRequest,
@@ -16,10 +15,11 @@ export async function POST(
     rating?: number; notes?: string; actualServings?: number
   }
 
+  const userId = getUserId(request.headers)
   const [session] = await db
     .select()
     .from(cookSessions)
-    .where(and(eq(cookSessions.id, id), eq(cookSessions.userId, DEFAULT_USER)))
+    .where(and(eq(cookSessions.id, id), eq(cookSessions.userId, userId)))
 
   if (!session) return NextResponse.json({ error: "session not found" }, { status: 404 })
   if (session.status !== "active") {
@@ -36,7 +36,7 @@ export async function POST(
   // Create cooked_log
   const [log] = await db.insert(cookedLog).values({
     recipeId: session.recipeId,
-    userId: DEFAULT_USER,
+    userId,
     actualMinutes,
     actualServings,
     rating: body.rating,

@@ -2,16 +2,16 @@
 
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
-**Last updated:** 2026-05-18
-**Updated by:** Claude Code — post-deploy fixes + TheMealDB + pantry staples
+**Last updated:** 2026-05-19
+**Updated by:** Claude Code — Phase A: forward-auth wiring + us module SRS
 
 ---
 
 ## Current Phase
 
-**Phase 7 — Polish (code complete, deploying)**
+**Phase 8 — `us` module (in progress)**
 
-All phases through 7 are written. Stack is in active first-deploy iteration.
+All phases through 7 are complete. Forward-auth is wired (D28 resolved). Building `us` — first multi-user module. Phase A (forward-auth) code-complete and ready to deploy. Phase B (us module) pending your sign-off on Phase A verification.
 
 ## Deployment topology
 
@@ -25,7 +25,7 @@ Internet → nginx (host, :443, TLS via certbot)
 
 nginx is already running on this VPS (serving isonga.makhax.com). Caddy is NOT the outermost TLS terminator — it serves plain HTTP on loopback only. nginx terminates TLS via certbot certs.
 
-**Implication for forward-auth:** when forward-auth wiring is added (user identity headers for modules), the outermost auth gate will sit in nginx or Pocket-ID, not Caddy. Caddy's `trusted_proxies static 127.0.0.1` ensures X-Forwarded-* headers from nginx are honoured.
+**Implication for forward-auth:** Caddy's `forward_auth` directives point to `pocket-id:1411/api/auth/verify`. Pocket-ID verifies the session cookie and injects `Remote-User`, `Remote-Email`, `Remote-Name`, `Remote-Groups` headers. Caddy then forwards these to modules. Modules read `Remote-Email` as the user identity. See `docs/operations/pocket-id-setup.md` for the full setup and verification steps.
 
 ## nginx setup (one-time, outside docker-compose)
 
@@ -85,7 +85,18 @@ sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Last Session Summary (post-deploy fixes + features)
+## Last Session Summary (Phase A: forward-auth wiring)
+
+- **Caddyfile** — `forward_auth pocket-id:1411 { uri /api/auth/verify; copy_headers Remote-Email Remote-User Remote-Name Remote-Groups }` added to all three module routes (`/meals*`, `/pantry*`, `/manhwa*`). `/us*` block will be added when the us module is built.
+- **meals identity** — `modules/meals/lib/identity.ts` created. `getUserId(headers)` helper reads `remote-email` → `remote-user` → `MEALS_DEFAULT_USER` (with production warning on fallback). Applied to: recipes POST, cook-sessions GET/POST, cook-sessions finish/cancel, cooked-log GET, suggestions GET, and both RSC page.tsx files (via `headers()` from next/headers). Widget endpoint keeps `DEFAULT_USER` (service-to-service, no user session).
+- **pantry identity** — same pattern. `modules/pantry/lib/identity.ts` created. Applied to purchases POST. Inventory PATCH has no user identity (shared inventory). Widget keeps `DEFAULT_USER`.
+- **manhwa identity** — `get_user_id(request)` added to `main.py`. Applied to all HTML routes (index, reading_list, add_to_list, update_list_item, delete_list_item) and all JSON API routes (api_list, api_add_to_list, api_update_list_item, api_delete_list_item). Widget endpoint uses `_DEFAULT_USER_ENV` directly.
+- **center users table** — `center.users` table added to schema and instrumentation.ts bootstrap. `auth.ts` now upserts email/name/role into `center.users` on every successful OIDC login. New users (girlfriend) appear automatically on first login.
+- **D28 resolved** — MEALS_DEFAULT_USER / PANTRY_DEFAULT_USER / MANHWA_DEFAULT_USER are now dev-only fallbacks with production warnings. Identity flows from Pocket-ID → Caddy → modules in production.
+- **Operations doc** — `docs/operations/pocket-id-setup.md` written with step-by-step guide: Pocket-ID first-run, girlfriend account, OIDC client registration, forward-auth endpoint verification, end-to-end test procedure, hairpin NAT note, recovery.
+- **us module SRS** — `docs/modules/us-srs.md` already present (written prior to this session). Phase B implementation pending your Phase A sign-off.
+
+## Previous Session Summary (post-deploy fixes + features)
 
 - **Deployed and fixed** — all modules now running. Fixed: admin role (ADMIN_EMAIL env var), DeleteButton onClick RSC error, TemplateResponse Starlette API change, base64 password URL encoding (meals/pantry DB + Redis), manhwa CSS selector, manifest `internal_api` double-/api/ bug, Next.js basePath double-path bug across meals/pantry Links and router.push calls.
 - **Light/dark mode** — all Center pages, meals, pantry, manhwa now follow `prefers-color-scheme`. Input fields, buttons, cards all themed.
@@ -119,9 +130,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## What's Built and Working
 
-**Infrastructure:** docker-compose (7 services), Caddyfile (TLS, per-module routing), Postgres init (4 schemas), `.env.example`.
+**Infrastructure:** docker-compose (7 services), Caddyfile (TLS, per-module routing + forward-auth for all module routes), Postgres init (4 schemas), `.env.example`.
 
-**Center:** Auth, dashboard (widgets + ordering), launcher, admin registry, internal API (service discovery, JWT minting, JWKS), demo widget routes.
+**Center:** Auth (OIDC via Pocket-ID), dashboard (widgets + ordering), launcher, admin registry, internal API (service discovery, JWT minting, JWKS), demo widget routes. `center.users` table — upserts on every OIDC login so all users are tracked automatically.
 
 **SDK (`packages/sdk-ts/`) v0.2:**
 - `call`, `verifyServiceToken`, `verifyToken`: service-to-service HTTP with token caching.
@@ -152,6 +163,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## What's In Progress
 
+- **Forward-auth deployment** — Caddyfile and module changes written; awaiting deployment + Phase A sign-off. Follow `docs/operations/pocket-id-setup.md`.
+- **`us` module** — SRS at `docs/modules/us-srs.md`. Phase B begins after Phase A sign-off.
 - **Bootstrap recipe library** — import first recipes via `/meals/recipes/import` (MealDB tab), or add manually.
 - **Add pantry staples** — go to `/pantry`, use the "Add" form to add always-available items (eggs, salt, oil, etc.).
 
@@ -164,10 +177,11 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Open Questions for the User
 
-1. **Hairpin NAT** — if VPS can't resolve `auth.lazy.lovey.tv` from within Docker, add `extra_hosts` to the center service.
-2. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
-3. **Navigation sign-off** — see the proposal below; confirm Option C and the shim code before it's built.
-4. **FinGuide URL** — the manifest has a placeholder URL; fill in the real one when registering.
+1. **Phase A sign-off** — deploy the forward-auth changes, follow the verification steps in `docs/operations/pocket-id-setup.md`, and confirm identity flows correctly for both you and your girlfriend before Phase B begins.
+2. **Pocket-ID forward-auth endpoint** — assumed `/api/auth/verify`. Verify during Phase A sign-off (see ops doc Step 4). If the path differs, update Caddyfile and module identity helpers.
+3. **Hairpin NAT** — if VPS can't resolve `auth.lazy.lovey.tv` from within Docker, add `extra_hosts: ["auth.lazy.lovey.tv:127.0.0.1"]` to the center service.
+4. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
+5. **FinGuide URL** — the manifest has a placeholder URL; fill in the real one when registering.
 
 ## Shared top bar — built
 
@@ -181,7 +195,8 @@ sudo nginx -t && sudo systemctl reload nginx
 - **D25:** SDK v0.2 — streams implemented in Phase 5 (first stream use case). Consumer group name = subscribing module ID. DLQ after 5 failures at `lc:dlq:{moduleId}`.
 - **D26:** npm workspaces (root `package.json`) — allows modules to reference `@lc/sdk` source without pre-build. Consuming modules use `transpilePackages: ["@lc/sdk"]`.
 - **D27:** Next.js modules use `basePath` (not Caddy prefix-stripping) — Caddy routes `/meals*` → `meals:3000` without stripping; `basePath: "/meals"` in `next.config.ts` handles URL generation. `internal_api` in manifests is `http://meals:3000/meals` (basePath only, no `/api` suffix — the SDK and widget fetcher append the path themselves).
-- **D28:** `MEALS_DEFAULT_USER` / `PANTRY_DEFAULT_USER` env vars for user identity in Phase 5 — Caddy forward-auth not yet wired to modules. Revisit in Phase 7 or when second user starts actively using meals/pantry.
+- **D28 (RESOLVED):** `MEALS_DEFAULT_USER` / `PANTRY_DEFAULT_USER` / `MANHWA_DEFAULT_USER` are now dev-only fallbacks. Production identity flows from Pocket-ID → Caddy forward-auth (`/api/auth/verify`) → `Remote-Email` header → `getUserId()` helper in each module. See `docs/operations/pocket-id-setup.md`.
+- **D29:** `us` module — first multi-user module. Identity from forward-auth; no privacy between the two users (everything shared). No Redis events in v0.1. Activity coalescing at application level in GET /api/activity (read-time, not insert-time) to avoid race conditions. SRS at `docs/modules/us-srs.md`.
 
 ## Known Issues / Tech Debt (updated)
 

@@ -36,5 +36,15 @@ export async function register() {
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `)
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS users (
+        email       TEXT        PRIMARY KEY,
+        name        TEXT,
+        role        TEXT        NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+        last_login  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
   }
 }

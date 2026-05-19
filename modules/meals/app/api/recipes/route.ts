@@ -3,8 +3,7 @@ import { db } from "@/db"
 import { recipes } from "@/db/schema"
 import type { Step, Ingredient } from "@/db/schema"
 import { and, arrayContains, eq, ilike, or } from "drizzle-orm"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { getUserId } from "@/lib/identity"
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     ingredients: body.ingredients ?? [],
     sourceUrl: body.sourceUrl,
     thumbnailUrl: body.thumbnailUrl,
-    createdBy: DEFAULT_USER,
+    createdBy: getUserId(request.headers),
   }).returning({ id: recipes.id })
 
   return NextResponse.json({ recipeId: recipe.id }, { status: 201 })

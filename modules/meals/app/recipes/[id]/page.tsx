@@ -8,8 +8,8 @@ import Link from "next/link"
 import { checkIngredients, priceIngredients } from "@/lib/pantry"
 import { findSubRecipe } from "@/lib/subrecipe"
 import { notFound } from "next/navigation"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { headers } from "next/headers"
+import { getUserId } from "@/lib/identity"
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ servings?: string }> }
 
@@ -35,13 +35,15 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
     .from(recipes)
   const otherRecipes = allRecipes.filter((r) => r.id !== id)
 
+  const userId = getUserId(await headers())
+
   // Parallel pantry calls
   const [checkResult, priceResult, activeSession] = await Promise.allSettled([
     checkIngredients(ings.map((i) => i.name)),
     priceIngredients(scaledIngs.filter((i) => i.quantity != null && i.unit != null)
       .map((i) => ({ name: i.name, quantity: i.quantity!, unit: i.unit! }))),
     db.select().from(cookSessions).where(
-      and(eq(cookSessions.recipeId, id), eq(cookSessions.userId, DEFAULT_USER), eq(cookSessions.status, "active"))
+      and(eq(cookSessions.recipeId, id), eq(cookSessions.userId, userId), eq(cookSessions.status, "active"))
     ),
   ])
 

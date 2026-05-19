@@ -4,8 +4,7 @@ import { db } from "@/db"
 import { inventory, purchases } from "@/db/schema"
 import { lc } from "@/lib/sdk"
 import { normalizeIngredient } from "@/lib/normalize"
-
-const DEFAULT_USER = process.env.PANTRY_DEFAULT_USER ?? ""
+import { getUserId } from "@/lib/identity"
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as {
@@ -27,7 +26,7 @@ export async function POST(request: NextRequest) {
     totalCost: body.totalCost != null ? String(body.totalCost) : null,
     currency: body.currency ?? "RWF",
     purchasedAt,
-    userId: DEFAULT_USER,
+    userId: getUserId(request.headers),
   }).returning({ id: purchases.id })
 
   // Upsert inventory: create row or add to existing quantity

@@ -3,20 +3,20 @@ import { db } from "@/db"
 import { cookSessions, recipes } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
 import type { Step } from "@/db/schema"
-
-const DEFAULT_USER = process.env.MEALS_DEFAULT_USER ?? ""
+import { getUserId } from "@/lib/identity"
 
 export async function GET(request: NextRequest) {
   // GET /api/cook-sessions?recipeId=... — returns active session for user+recipe
   const recipeId = request.nextUrl.searchParams.get("recipeId")
   if (!recipeId) return NextResponse.json({ error: "recipeId required" }, { status: 400 })
 
+  const userId = getUserId(request.headers)
   const [session] = await db
     .select()
     .from(cookSessions)
     .where(
       and(
-        eq(cookSessions.userId, DEFAULT_USER),
+        eq(cookSessions.userId, userId),
         eq(cookSessions.recipeId, recipeId),
         eq(cookSessions.status, "active")
       )
@@ -29,11 +29,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json() as { recipeId: string; servings?: number }
   if (!body.recipeId) return NextResponse.json({ error: "recipeId required" }, { status: 400 })
 
+  const userId = getUserId(request.headers)
+
   // Enforce one active session per user
   const [existing] = await db
     .select()
     .from(cookSessions)
-    .where(and(eq(cookSessions.userId, DEFAULT_USER), eq(cookSessions.status, "active")))
+    .where(and(eq(cookSessions.userId, userId), eq(cookSessions.status, "active")))
 
   if (existing) {
     return NextResponse.json(
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
   const servings = body.servings ?? recipe.servingsDefault
 
   const [session] = await db.insert(cookSessions).values({
-    userId: DEFAULT_USER,
+    userId,
     recipeId: body.recipeId,
     servings,
     status: "active",
