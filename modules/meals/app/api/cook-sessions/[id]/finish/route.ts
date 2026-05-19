@@ -57,6 +57,7 @@ export async function POST(
       event: "meals.recipe.cooked",
       data: {
         recipeId: session.recipeId,
+        userId,
         servings: actualServings,
         ingredients: scaledIngredients,
         cookedAt: finishedAt.toISOString(),

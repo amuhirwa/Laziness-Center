@@ -39,9 +39,9 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
 
   // Parallel pantry calls
   const [checkResult, priceResult, activeSession] = await Promise.allSettled([
-    checkIngredients(ings.map((i) => i.name)),
+    checkIngredients(ings.map((i) => i.name), userId),
     priceIngredients(scaledIngs.filter((i) => i.quantity != null && i.unit != null)
-      .map((i) => ({ name: i.name, quantity: i.quantity!, unit: i.unit! }))),
+      .map((i) => ({ name: i.name, quantity: i.quantity!, unit: i.unit! })), userId),
     db.select().from(cookSessions).where(
       and(eq(cookSessions.recipeId, id), eq(cookSessions.userId, userId), eq(cookSessions.status, "active"))
     ),

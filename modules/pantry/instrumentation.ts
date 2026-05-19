@@ -10,7 +10,8 @@ export async function register() {
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS inventory (
       id               SERIAL       PRIMARY KEY,
-      name_normalized  TEXT         NOT NULL UNIQUE,
+      user_id          TEXT         NOT NULL DEFAULT '',
+      name_normalized  TEXT         NOT NULL,
       name_display     TEXT         NOT NULL,
       quantity         NUMERIC(10,3) NOT NULL DEFAULT 0,
       unit             TEXT         NOT NULL,
@@ -50,6 +51,19 @@ export async function register() {
 
   // ── Schema migrations (idempotent) ───────────────────────────────────────
   await db.execute(sql`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS always_available BOOLEAN NOT NULL DEFAULT false`)
+  await db.execute(sql`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT ''`)
+  // Drop the old single-column unique, add composite unique (user_id, name_normalized).
+  // IF NOT EXISTS on indexes avoids re-creation on subsequent restarts.
+  await db.execute(sql`
+    DO $$ BEGIN
+      ALTER TABLE inventory DROP CONSTRAINT IF EXISTS inventory_name_normalized_key;
+    EXCEPTION WHEN others THEN NULL;
+    END $$
+  `)
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS inventory_user_name_idx
+    ON inventory (user_id, name_normalized)
+  `)
 
   // ── Currency migration: USD → RWF ─────────────────────────────────────────
   // Fix the column default on existing tables (CREATE TABLE IF NOT EXISTS won't update it).
@@ -62,7 +76,7 @@ export async function register() {
   const { normalizeIngredient } = await import("./lib/normalize")
   const { convertUnit } = await import("./lib/units")
   const { inventory, consumptionLog, processedEvents } = await import("./db/schema")
-  const { eq, inArray } = await import("drizzle-orm")
+  const { and, eq, inArray } = await import("drizzle-orm")
 
   lc.subscribe(
     "meals.recipe.cooked",
@@ -74,8 +88,9 @@ export async function register() {
         .where(eq(processedEvents.eventId, event.id))
       if (already.length > 0) return
 
-      const { recipeId, ingredients } = event.data as {
+      const { recipeId, userId: cookUserId = "", ingredients } = event.data as {
         recipeId: string
+        userId?: string
         servings: number
         ingredients: Array<{ name: string; quantity: number; unit: string }>
       }
@@ -88,7 +103,7 @@ export async function register() {
         const [inv] = await db
           .select()
           .from(inventory)
-          .where(eq(inventory.nameNormalized, norm))
+          .where(and(eq(inventory.userId, cookUserId), eq(inventory.nameNormalized, norm)))
 
         if (!inv) {
           await db.insert(consumptionLog).values({

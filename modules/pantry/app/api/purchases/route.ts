@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   const purchasedAt = body.purchasedAt ? new Date(body.purchasedAt) : new Date()
+  const userId = getUserId(request.headers)
 
   // Insert purchase record
   const [purchase] = await db.insert(purchases).values({
@@ -26,19 +27,20 @@ export async function POST(request: NextRequest) {
     totalCost: body.totalCost != null ? String(body.totalCost) : null,
     currency: body.currency ?? "RWF",
     purchasedAt,
-    userId: getUserId(request.headers),
+    userId,
   }).returning({ id: purchases.id })
 
-  // Upsert inventory: create row or add to existing quantity
+  // Upsert inventory: create row or add to existing quantity (scoped to this user)
   for (const item of body.items) {
     const norm = normalizeIngredient(item.name)
     await db.insert(inventory).values({
+      userId,
       nameNormalized: norm,
       nameDisplay: item.name,
       quantity: String(item.quantity),
       unit: item.unit,
     }).onConflictDoUpdate({
-      target: inventory.nameNormalized,
+      target: [inventory.userId, inventory.nameNormalized],
       set: {
         quantity: sql`${inventory.quantity} + ${String(item.quantity)}`,
         lastUpdated: new Date(),

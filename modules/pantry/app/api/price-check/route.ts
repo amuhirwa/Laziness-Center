@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { purchases } from "@/db/schema"
-import { desc } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { lc } from "@/lib/sdk"
 import { normalizeIngredient } from "@/lib/normalize"
 import { convertUnit } from "@/lib/units"
@@ -12,14 +12,17 @@ export async function POST(request: NextRequest) {
   const result = await lc.verifyToken(request.headers.get("authorization") ?? "")
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 401 })
 
-  const body = await request.json() as { items?: unknown }
+  const body = await request.json() as { items?: unknown; userId?: string }
   if (!Array.isArray(body.items)) {
     return NextResponse.json({ error: "items must be an array" }, { status: 400 })
   }
   const items = body.items as RequestItem[]
+  const userId = body.userId ?? ""
 
-  // Fetch all purchases sorted by most recent — we'll scan them per item
-  const allPurchases = await db.select().from(purchases).orderBy(desc(purchases.purchasedAt))
+  // Fetch this user's purchases sorted by most recent — scan per item for unit price
+  const allPurchases = await db.select().from(purchases)
+    .where(eq(purchases.userId, userId))
+    .orderBy(desc(purchases.purchasedAt))
 
   const priced: Array<{
     name: string; totalCost: number; currency: string

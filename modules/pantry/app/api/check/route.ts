@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { inventory } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { lc } from "@/lib/sdk"
 import { normalizeIngredient, ingredientMatches } from "@/lib/normalize"
 
@@ -8,13 +9,14 @@ export async function POST(request: NextRequest) {
   const result = await lc.verifyToken(request.headers.get("authorization") ?? "")
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 401 })
 
-  const body = await request.json() as { items?: unknown }
+  const body = await request.json() as { items?: unknown; userId?: string }
   if (!Array.isArray(body.items)) {
     return NextResponse.json({ error: "items must be an array of strings" }, { status: 400 })
   }
   const items = body.items as string[]
+  const userId = body.userId ?? ""
 
-  const rows = await db.select().from(inventory)
+  const rows = await db.select().from(inventory).where(eq(inventory.userId, userId))
 
   // Separate in-stock from staples (always_available but currently empty)
   const inStockNorms = rows

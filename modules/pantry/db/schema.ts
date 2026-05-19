@@ -1,15 +1,18 @@
-import { pgTable, serial, text, numeric, timestamp, uuid, jsonb, boolean } from "drizzle-orm/pg-core"
+import { pgTable, serial, text, numeric, timestamp, uuid, jsonb, boolean, uniqueIndex } from "drizzle-orm/pg-core"
 
 export const inventory = pgTable("inventory", {
   id: serial("id").primaryKey(),
-  nameNormalized: text("name_normalized").notNull().unique(),
+  userId: text("user_id").notNull().default(""),
+  nameNormalized: text("name_normalized").notNull(),
   nameDisplay: text("name_display").notNull(),
   quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull().default("0"),
   unit: text("unit").notNull(),
   alwaysAvailable: boolean("always_available").notNull().default(false),
   lowStockThreshold: numeric("low_stock_threshold", { precision: 10, scale: 3 }),
   lastUpdated: timestamp("last_updated", { withTimezone: true }).notNull().defaultNow(),
-})
+}, (table) => [
+  uniqueIndex("inventory_user_name_idx").on(table.userId, table.nameNormalized),
+])
 
 export const purchases = pgTable("purchases", {
   id: uuid("id").primaryKey().defaultRandom(),

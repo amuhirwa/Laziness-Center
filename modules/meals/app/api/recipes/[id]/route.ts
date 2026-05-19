@@ -4,6 +4,7 @@ import { recipes } from "@/db/schema"
 import type { Ingredient, Step } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { priceIngredients } from "@/lib/pantry"
+import { getUserId } from "@/lib/identity"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -28,7 +29,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const priceable = scaledIngs.filter((i) => i.quantity != null && i.unit != null)
   if (priceable.length > 0) {
     const priceResult = await priceIngredients(
-      priceable.map((i) => ({ name: i.name, quantity: i.quantity!, unit: i.unit! }))
+      priceable.map((i) => ({ name: i.name, quantity: i.quantity!, unit: i.unit! })),
+      getUserId(request.headers)
     )
     if (priceResult) {
       const total = priceResult.priced.reduce((s, p) => s + p.totalCost, 0)

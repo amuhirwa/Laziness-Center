@@ -64,7 +64,7 @@ export async function getSuggestions(
   let pantryOk = false
   try {
     const { checkIngredients } = await import("./pantry")
-    const result = await checkIngredients(allIngredients)
+    const result = await checkIngredients(allIngredients, userId)
     if (result) {
       inStockSet = new Set(result.available)
       staplesSet = new Set(result.staples ?? [])

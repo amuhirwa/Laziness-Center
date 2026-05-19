@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { inventory } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { lc } from "@/lib/sdk"
+import { getUserId } from "@/lib/identity"
 
 export async function PATCH(
   request: NextRequest,
@@ -19,10 +20,11 @@ export async function PATCH(
     return NextResponse.json({ error: "quantity or alwaysAvailable required" }, { status: 400 })
   }
 
+  const userId = getUserId(request.headers)
   const [updated] = await db
     .update(inventory)
     .set(patch)
-    .where(eq(inventory.id, parseInt(id)))
+    .where(and(eq(inventory.id, parseInt(id)), eq(inventory.userId, userId)))
     .returning()
 
   if (!updated) return NextResponse.json({ error: "not found" }, { status: 404 })
