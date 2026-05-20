@@ -1,0 +1,11 @@
+id: manhwa
+name: Manhwa
+description: Browse and track manhwa from MangaUpdates
+type: proxy_subpath
+url: /manhwa
+internal_api: http://manhwa:8000
+health_check: http://manhwa:8000/health
+widgets:
+  - id: reading
+    endpoint: /api/widget/reading
+    refresh_seconds: 3600

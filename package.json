@@ -5,6 +5,7 @@
     "packages/sdk-ts",
     "center",
     "modules/meals",
-    "modules/pantry"
+    "modules/pantry",
+    "modules/us"
   ]
 }

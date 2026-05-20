@@ -1,0 +1,15 @@
+id: us
+name: Us
+description: Shared lists, plans, and places for the two of us
+icon: heart
+type: proxy_subpath
+url: /us
+internal_api: http://us:3000/us/api
+health_check: http://us:3000/us/api/health
+widgets:
+  - id: recent
+    endpoint: /widget/recent
+    refresh_seconds: 600
+events:
+  publishes: []
+  subscribes: []

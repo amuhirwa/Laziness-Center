@@ -23,6 +23,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [steps, setSteps] = useState<Step[]>([])
   const [sourceUrl, setSourceUrl] = useState("")
+  const [thumbnailUrl, setThumbnailUrl] = useState("")
 
   useEffect(() => {
     fetch(`/meals/api/recipes/${id}`)
@@ -31,6 +32,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         name: string; timeMinutes: number | null; servingsDefault: number
         difficulty: string | null; mealTypes: string[]; tags: string[]
         ingredients: Ingredient[]; steps: Step[]; sourceUrl: string | null
+        thumbnailUrl: string | null
       }) => {
         setName(data.name)
         setTimeMinutes(data.timeMinutes != null ? String(data.timeMinutes) : "")
@@ -41,6 +43,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         setIngredients(data.ingredients?.length ? data.ingredients : [{ name: "", quantity: null, unit: null }])
         setSteps(data.steps?.length ? data.steps : [{ text: "" }])
         setSourceUrl(data.sourceUrl ?? "")
+        setThumbnailUrl(data.thumbnailUrl ?? "")
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -72,6 +75,7 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
           ingredients: ingredients.filter((i) => i.name.trim()),
           steps: steps.filter((s) => s.text.trim()),
           sourceUrl: sourceUrl || null,
+          thumbnailUrl: thumbnailUrl || null,
         }),
       })
       if (!res.ok) { const b = await res.json(); setError(b.error ?? "Failed"); return }
@@ -170,6 +174,17 @@ export default function EditRecipePage({ params }: { params: Promise<{ id: strin
         <div className="flex flex-col gap-1">
           <label className="text-xs text-neutral-500">Source URL (optional)</label>
           <input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} type="url" className={inputCls} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xs text-neutral-500">Thumbnail URL (optional)</label>
+          <input value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} type="url"
+            placeholder="https://…" className={inputCls} />
+          {thumbnailUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={thumbnailUrl} alt="thumbnail preview"
+              className="w-full h-40 object-cover rounded-lg" />
+          )}
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}

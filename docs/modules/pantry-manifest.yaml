@@ -1,0 +1,17 @@
+id: pantry
+name: Pantry
+description: What's in stock, what's running low
+type: proxy_subpath
+url: /pantry
+internal_api: http://pantry:3000/pantry
+health_check: http://pantry:3000/pantry/health
+widgets:
+  - id: low-stock
+    endpoint: /api/widget/low-stock
+    refresh_seconds: 600
+events:
+  publishes:
+    - { name: pantry.purchase.recorded, transport: stream }
+    - { name: pantry.inventory.changed, transport: pubsub }
+  subscribes:
+    - meals.recipe.cooked

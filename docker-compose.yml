@@ -83,6 +83,24 @@ services:
     networks:
       - laziness
 
+  us:
+    build:
+      context: .
+      dockerfile: modules/us/Dockerfile
+    restart: unless-stopped
+    environment:
+      US_DB_PASSWORD: "${US_DB_PASSWORD}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+      CENTER_INTERNAL_URL: "http://center:3000"
+      US_DEFAULT_USER: "${US_DEFAULT_USER}"
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+      - center
+    networks:
+      - laziness
+
   manhwa:
     build:
       context: ./modules/manhwa
@@ -114,6 +132,7 @@ services:
       MANHWA_DB_PASSWORD: "${MANHWA_DB_PASSWORD}"
       MEALS_DB_PASSWORD: "${MEALS_DB_PASSWORD}"
       PANTRY_DB_PASSWORD: "${PANTRY_DB_PASSWORD}"
+      US_DB_PASSWORD: "${US_DB_PASSWORD}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro

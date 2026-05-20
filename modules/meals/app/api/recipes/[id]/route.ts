@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const body = await request.json() as Partial<{
     name: string; timeMinutes: number; servingsDefault: number
     difficulty: "easy" | "medium" | "hard"; mealTypes: string[]; tags: string[]
-    steps: Step[]; ingredients: Ingredient[]; sourceUrl: string
+    steps: Step[]; ingredients: Ingredient[]; sourceUrl: string; thumbnailUrl: string
   }>
 
   const steps = body.steps

@@ -1,0 +1,16 @@
+id: meals
+name: Meal Picker
+description: Pick a meal, see the recipe, know what's missing
+type: proxy_subpath
+url: /meals
+internal_api: http://meals:3000/meals
+health_check: http://meals:3000/meals/health
+widgets:
+  - id: tonight
+    endpoint: /api/widget/tonight
+    refresh_seconds: 3600
+events:
+  publishes:
+    - { name: meals.recipe.cooked, transport: stream }
+  subscribes:
+    - pantry.inventory.changed
