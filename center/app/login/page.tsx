@@ -1,6 +1,11 @@
 import { signIn } from "@/auth"
 
-export default function LoginPage() {
+type Props = { searchParams: Promise<{ callbackUrl?: string }> }
+
+export default async function LoginPage({ searchParams }: Props) {
+  const { callbackUrl } = await searchParams
+  const redirectTo = callbackUrl ?? "/dashboard"
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center space-y-8">
@@ -11,7 +16,7 @@ export default function LoginPage() {
         <form
           action={async () => {
             "use server"
-            await signIn("pocket-id", { redirectTo: "/dashboard" })
+            await signIn("pocket-id", { redirectTo })
           }}
         >
           <button
