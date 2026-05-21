@@ -3,7 +3,7 @@ import { db } from "@/db"
 import { recipes } from "@/db/schema"
 import type { Step, Ingredient } from "@/db/schema"
 import { and, arrayContains, eq, ilike, or } from "drizzle-orm"
-import { getUserId } from "@/lib/identity"
+import { getUserId, isGuest } from "@/lib/identity"
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (isGuest(getUserId(request.headers))) return NextResponse.json({ error: "unauthorized" }, { status: 403 })
+
   const body = await request.json() as {
     name: string
     timeMinutes?: number

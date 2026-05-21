@@ -1,10 +1,14 @@
 import type { Metadata } from "next"
 import Script from "next/script"
+import { headers } from "next/headers"
+import { getUserId, isGuest } from "@/lib/identity"
 import "./globals.css"
 
 export const metadata: Metadata = { title: "Meals — Laziness Center" }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const guest = isGuest(getUserId(await headers()))
+
   return (
     <html lang="en">
       <body className="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen antialiased font-sans">
@@ -15,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span className="font-semibold">Meals</span>
             <a href="/meals" className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">Suggestions</a>
             <a href="/meals/recipes" className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">Library</a>
-            <a href="/meals/recipes/import" className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">Import</a>
+            {!guest && <a href="/meals/recipes/import" className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">Import</a>}
             <a href="/meals/history" className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">History</a>
           </nav>
         </header>

@@ -4,7 +4,7 @@ import { recipes } from "@/db/schema"
 import type { Ingredient, Step } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { priceIngredients } from "@/lib/pantry"
-import { getUserId } from "@/lib/identity"
+import { getUserId, isGuest } from "@/lib/identity"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 export async function PUT(request: NextRequest, { params }: Params) {
+  if (isGuest(getUserId(request.headers))) return NextResponse.json({ error: "unauthorized" }, { status: 403 })
   const { id } = await params
   const body = await request.json() as Partial<{
     name: string; timeMinutes: number; servingsDefault: number
@@ -73,7 +74,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
   return NextResponse.json({ recipeId: updated.id })
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: Params) {
+  if (isGuest(getUserId(request.headers))) return NextResponse.json({ error: "unauthorized" }, { status: 403 })
   const { id } = await params
   await db.delete(recipes).where(eq(recipes.id, id))
   return new NextResponse(null, { status: 204 })

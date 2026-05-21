@@ -4,11 +4,14 @@ import { db } from "@/db"
 import { recipes } from "@/db/schema"
 import { desc } from "drizzle-orm"
 import Link from "next/link"
+import { headers } from "next/headers"
+import { getUserId, isGuest } from "@/lib/identity"
 
 type Props = { searchParams: Promise<{ tag?: string; mealType?: string }> }
 
 export default async function RecipeLibraryPage({ searchParams }: Props) {
   const { tag, mealType } = await searchParams
+  const guest = isGuest(getUserId(await headers()))
 
   const allRecipes = await db.select().from(recipes).orderBy(desc(recipes.updatedAt))
 
@@ -31,16 +34,18 @@ export default async function RecipeLibraryPage({ searchParams }: Props) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold">Recipe Library</h1>
-        <div className="flex gap-2">
-          <Link href="/recipes/import"
-            className="text-sm px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
-            Import
-          </Link>
-          <Link href="/recipes/new"
-            className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity">
-            + Add
-          </Link>
-        </div>
+        {!guest && (
+          <div className="flex gap-2">
+            <Link href="/recipes/import"
+              className="text-sm px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
+              Import
+            </Link>
+            <Link href="/recipes/new"
+              className="text-sm px-4 py-1.5 bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 rounded-md font-medium hover:opacity-90 transition-opacity">
+              + Add
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Filters */}

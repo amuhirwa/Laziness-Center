@@ -2,16 +2,16 @@
 
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
-**Last updated:** 2026-05-19
-**Updated by:** Claude Code — Phase A: forward-auth wiring + Phase B: us module built
+**Last updated:** 2026-05-21
+**Updated by:** Claude Code — us module deployed + bug fixes
 
 ---
 
 ## Current Phase
 
-**Phase 8 — `us` module (code complete, ready to deploy)**
+**Phase 8 — `us` module (deployed, live at lazy.lovey.tv/us)**
 
-All phases through 7 complete. Forward-auth wired. `us` module fully built — checklists, wishlists, places, activity, search, widget. Pending deployment and your sign-off via the live UI.
+All phases through 7 complete. Forward-auth wired. `us` module live — checklists, wishlists, places, activity, search, widget. Pending full walkthrough sign-off from the user.
 
 ## Deployment topology
 
@@ -85,7 +85,16 @@ sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Last Session Summary (Phase A + B: forward-auth + us module)
+## Last Session Summary (deployment + post-deploy fixes)
+
+- **us module deployed** — running on VPS as `web-us-1`. Fixed two bugs discovered at deploy time:
+  - `place-detail.tsx`: `await` inside non-async setState callback → extracted to local variable before setState call (build error).
+  - All `<Link>` hrefs and `router.push` calls in the us module used `/us/...` paths — with `basePath: "/us"` Next.js prepends the basePath automatically, causing double-prefix (`/us/us/...`) 404s. Fixed by stripping `/us` from all Next.js-routed paths (plain `<a>` tags with full paths are unaffected).
+  - `us` Postgres user missing — `init.sh` only runs on first volume creation; VPS postgres volume was 3 days old. Fixed by running `CREATE USER / CREATE SCHEMA` manually via `docker exec`.
+- **Pantry inventory delete** — `DELETE /pantry/api/inventory/:id` added (scoped to userId). `✕` button added to every inventory row on hover in the UI.
+- **Module manifest files** — individual YAML files created for all modules: `docs/modules/manhwa-manifest.yaml`, `meals-manifest.yaml`, `pantry-manifest.yaml`, `finguide-manifest.yaml`, `us-manifest.yaml`.
+
+## Previous Last Session Summary (Phase A + B: forward-auth + us module)
 
 - **us module built** — full `modules/us/` directory. Next.js + TypeScript + Tailwind, `basePath: "/us"`, schema-per-module (`us` Postgres user). All 5 sections shipped: Checklists, Wishlists, Places, Activity, Search.
 - **Checklists** — CRUD API, list/detail/archived pages, client-side completion toggling, pin/archive/duplicate actions, comments.
@@ -165,12 +174,13 @@ sudo nginx -t && sudo systemctl reload nginx
 - Manifest: `docs/modules/us-manifest.yaml` (paste into Admin → Modules to register).
 
 **Pantry module (`modules/pantry/`):**
-- Inventory view + manual edit.
+- Inventory view + manual edit + delete (✕ button on hover).
 - Purchase log form: publishes `pantry.purchase.recorded` (stream) + `pantry.inventory.changed` (pubsub).
-- `/api/check`: ingredient availability by normalized name.
-- `/api/price-check`: most-recent unit price, metric unit conversion only.
-- Stream consumer for `meals.recipe.cooked`: auto-deducts with idempotency, logs partial deductions.
+- `/api/check`: ingredient availability by normalized name, scoped to userId.
+- `/api/price-check`: most-recent unit price, metric unit conversion only, scoped to userId.
+- Stream consumer for `meals.recipe.cooked`: auto-deducts with idempotency, logs partial deductions, scoped to userId from event payload.
 - Dashboard widget: inventory count + last-updated date.
+- Inventory is per-user (added `user_id` column, composite unique on `(user_id, name_normalized)`).
 
 **Meals module (`modules/meals/`):**
 - Suggestions page: weighted-random algorithm (pinned ×3, pantry ×2/1.5, rating × rating/3, recent-cook exclusion).
@@ -185,7 +195,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## What's In Progress
 
-- **Deployment** — Forward-auth + us module changes ready. Deploy: `docker compose up -d --build`. Then follow `docs/operations/pocket-id-setup.md` for Pocket-ID setup. Register the us manifest via Admin → Modules (`docs/modules/us-manifest.yaml`).
+- **us module walkthrough** — live at `lazy.lovey.tv/us`. Walk through all three sections (checklists, wishlists, places) and report anything that feels off.
 - **Bootstrap recipe library** — import first recipes via `/meals/recipes/import` (MealDB tab), or add manually.
 - **Add pantry staples** — go to `/pantry`, use the "Add" form to add always-available items (eggs, salt, oil, etc.).
 
@@ -198,11 +208,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Open Questions for the User
 
-1. **Phase A sign-off** — deploy the forward-auth changes, follow the verification steps in `docs/operations/pocket-id-setup.md`, and confirm identity flows correctly for both you and your girlfriend before Phase B begins.
-2. **Pocket-ID forward-auth endpoint** — assumed `/api/auth/verify`. Verify during Phase A sign-off (see ops doc Step 4). If the path differs, update Caddyfile and module identity helpers.
-3. **Hairpin NAT** — if VPS can't resolve `auth.lazy.lovey.tv` from within Docker, add `extra_hosts: ["auth.lazy.lovey.tv:127.0.0.1"]` to the center service.
-4. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
-5. **FinGuide URL** — the manifest has a placeholder URL; fill in the real one when registering.
+1. **Forward-auth sign-off** — confirm `Remote-Email` is being injected by Pocket-ID by checking that the us module shows your email correctly in activity entries. If not, verify the endpoint path in `docs/operations/pocket-id-setup.md` Step 4.
+2. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
+3. **FinGuide URL** — `docs/modules/finguide-manifest.yaml` has a placeholder URL; fill in the real one before registering.
 
 ## Shared top bar — built
 
@@ -224,7 +232,7 @@ sudo nginx -t && sudo systemctl reload nginx
 - `meals.recipe.cooked` stream consumer in pantry starts in `instrumentation.ts` with `"$"` offset (only new messages). On first deploy, any events published before the consumer group was created are missed. Re-subscribe with offset `"0"` if you want to replay historical events.
 - Suggestion cache invalidation deletes ALL cache rows on any pantry change — fine for one user, overkill if two users have different caches. Scope deletion by user in v1.1.
 - Purchase form in pantry doesn't validate unit mismatch between items — user can log "flour in kg" then "flour in g" as two separate inventory rows. The normalization handles this at query time but inventory counts can diverge. UI warning planned for v0.2.
-- No edit page for recipes in v0.1 UI (only Add/Import). API supports PUT. Add edit UI in Phase 7.
+- No edit page for recipes in v0.1 UI (only Add/Import). API supports PUT. Edit page exists at `/recipes/[id]/edit` — confirm it's wired up in nav.
 - `packages/sdk-ts/package.json` exports point to `src/index.ts` — requires `transpilePackages` in consumers. Third-party modules using the SDK as an installed npm package will need a pre-built dist. Build script is still present; add `"prepare": "npm run build"` if publishing.
 
 ---

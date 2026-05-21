@@ -11,7 +11,7 @@ import { checkIngredients, priceIngredients } from "@/lib/pantry"
 import { findSubRecipe } from "@/lib/subrecipe"
 import { notFound } from "next/navigation"
 import { headers } from "next/headers"
-import { getUserId } from "@/lib/identity"
+import { getUserId, isGuest } from "@/lib/identity"
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ servings?: string }> }
 
@@ -52,6 +52,7 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
   const otherRecipes = allRecipes.filter((r) => r.id !== id)
 
   const userId = getUserId(await headers())
+  const guest = isGuest(userId)
 
   // Parallel pantry calls
   const [checkResult, priceResult, activeSession] = await Promise.allSettled([
@@ -96,10 +97,12 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <ShareButton title={recipe.name} />
-          <Link href={`/recipes/${id}/edit`}
-            className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors">
-            Edit
-          </Link>
+          {!guest && (
+            <Link href={`/recipes/${id}/edit`}
+              className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors">
+              Edit
+            </Link>
+          )}
         </div>
       </div>
 
