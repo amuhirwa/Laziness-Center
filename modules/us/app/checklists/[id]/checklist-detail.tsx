@@ -84,7 +84,7 @@ export default function ChecklistDetail({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isArchived: !checklist.isArchived }),
     })
-    router.push("/us/checklists")
+    router.push("/checklists")
   }
 
   async function togglePin() {
@@ -100,7 +100,7 @@ export default function ChecklistDetail({
     const res = await fetch(`${base}/duplicate`, { method: "POST" })
     if (res.ok) {
       const newCl = await res.json() as { id: string }
-      router.push(`/us/checklists/${newCl.id}`)
+      router.push(`/checklists/${newCl.id}`)
     }
   }
 

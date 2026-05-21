@@ -25,7 +25,7 @@ export default async function ChecklistPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
-        <Link href="/us/checklists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 shrink-0 pt-0.5">←</Link>
+        <Link href="/checklists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 shrink-0 pt-0.5">←</Link>
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg leading-tight">{checklist.name}</h1>
           {checklist.description && (

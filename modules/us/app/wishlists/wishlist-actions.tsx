@@ -23,7 +23,7 @@ export default function WishlistActions() {
       const item = await res.json() as { id: string; hadMeta: boolean }
       if (!item.hadMeta) setNotice("Couldn't fetch metadata — edit the item to fill in details.")
       setUrl("")
-      router.push(`/us/wishlists/${item.id}`)
+      router.push(`/wishlists/${item.id}`)
     }
     setPending(false)
   }

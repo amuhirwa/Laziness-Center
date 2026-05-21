@@ -71,7 +71,7 @@ export default function WishlistItemDetail({
 
   async function deleteItem() {
     await fetch(base, { method: "DELETE" })
-    router.push("/us/wishlists")
+    router.push("/wishlists")
   }
 
   async function addComment(e: React.FormEvent) {

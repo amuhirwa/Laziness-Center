@@ -64,6 +64,11 @@ export default function InventoryPage() {
     load()
   }
 
+  async function deleteItem(item: Item) {
+    await fetch(`/pantry/api/inventory/${item.id}`, { method: "DELETE" })
+    load()
+  }
+
   async function addItem(e: React.FormEvent) {
     e.preventDefault()
     setAddError("")
@@ -125,7 +130,7 @@ export default function InventoryPage() {
             <Section title="In stock" dot="bg-green-500" items={inStock}
               editingId={editingId} editQty={editQty}
               setEditingId={setEditingId} setEditQty={setEditQty}
-              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} />
+              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} deleteItem={deleteItem} />
           )}
 
           {/* Staples */}
@@ -133,7 +138,7 @@ export default function InventoryPage() {
             <Section title="Staples — always available" dot="bg-blue-400" items={staples}
               editingId={editingId} editQty={editQty}
               setEditingId={setEditingId} setEditQty={setEditQty}
-              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} />
+              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} deleteItem={deleteItem} />
           )}
 
           {/* Out of stock */}
@@ -141,7 +146,7 @@ export default function InventoryPage() {
             <Section title="Out of stock" dot="bg-neutral-400 dark:bg-neutral-600" items={outOfStock}
               editingId={editingId} editQty={editQty}
               setEditingId={setEditingId} setEditQty={setEditQty}
-              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} />
+              saveQty={saveQty} markOut={markOut} toggleAlways={toggleAlways} deleteItem={deleteItem} />
           )}
         </div>
       )}
@@ -158,7 +163,7 @@ export default function InventoryPage() {
   )
 }
 
-function Section({ title, dot, items, editingId, editQty, setEditingId, setEditQty, saveQty, markOut, toggleAlways }: {
+function Section({ title, dot, items, editingId, editQty, setEditingId, setEditQty, saveQty, markOut, toggleAlways, deleteItem }: {
   title: string; dot: string; items: Item[]
   editingId: number | null; editQty: string
   setEditingId: (id: number | null) => void
@@ -166,6 +171,7 @@ function Section({ title, dot, items, editingId, editQty, setEditingId, setEditQ
   saveQty: (item: Item) => void
   markOut: (item: Item) => void
   toggleAlways: (item: Item) => void
+  deleteItem: (item: Item) => void
 }) {
   return (
     <div>
@@ -217,6 +223,11 @@ function Section({ title, dot, items, editingId, editQty, setEditingId, setEditQ
                     : "text-neutral-400 hover:text-blue-500"
                 }`}>
                 {item.alwaysAvailable ? "★ staple" : "staple"}
+              </button>
+              <button onClick={() => deleteItem(item)}
+                title="Delete item"
+                className="px-2 py-1 text-xs text-neutral-400 hover:text-red-500 transition-colors rounded">
+                ✕
               </button>
             </div>
           </div>

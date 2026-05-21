@@ -28,7 +28,7 @@ export default async function ChecklistsPage() {
     const remaining = totalMap.get(cl.id) ?? 0
     return (
       <Link
-        href={`/us/checklists/${cl.id}`}
+        href={`/checklists/${cl.id}`}
         className="block p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
       >
         <div className="flex items-start justify-between gap-2">
@@ -49,7 +49,7 @@ export default async function ChecklistsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold">Checklists</h1>
-        <Link href="/us/checklists/archived" className="text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300">
+        <Link href="/checklists/archived" className="text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300">
           Archived
         </Link>
       </div>

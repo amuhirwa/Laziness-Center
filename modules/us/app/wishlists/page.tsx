@@ -36,7 +36,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       {/* Status tabs */}
       <div className="flex gap-1">
         {STATUSES.map((s) => (
-          <Link key={s} href={`/us/wishlists?status=${s}`}
+          <Link key={s} href={`/wishlists?status=${s}`}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${
               s === status
                 ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900"
@@ -52,7 +52,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       ) : (
         <div className="space-y-3">
           {rows.map((item) => (
-            <Link key={item.id} href={`/us/wishlists/${item.id}`}
+            <Link key={item.id} href={`/wishlists/${item.id}`}
               className="flex gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
               {item.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element

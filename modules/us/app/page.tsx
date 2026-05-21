@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation"
-export default function RootPage() { redirect("/us/checklists") }
+export default function RootPage() { redirect("/checklists") }

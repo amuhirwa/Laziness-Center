@@ -13,7 +13,7 @@ export default async function ArchivedPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Link href="/us/checklists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
+        <Link href="/checklists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
         <h1 className="font-semibold">Archived</h1>
       </div>
       {rows.length === 0 ? (
@@ -21,7 +21,7 @@ export default async function ArchivedPage() {
       ) : (
         <div className="space-y-2">
           {rows.map((cl) => (
-            <Link key={cl.id} href={`/us/checklists/${cl.id}`}
+            <Link key={cl.id} href={`/checklists/${cl.id}`}
               className="block p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
               <p className="font-medium text-sm">{cl.name}</p>
               {cl.archivedAt && (

@@ -37,3 +37,14 @@ export async function PATCH(
 
   return NextResponse.json(updated)
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const userId = getUserId(request.headers)
+  await db.delete(inventory)
+    .where(and(eq(inventory.id, parseInt(id)), eq(inventory.userId, userId)))
+  return new NextResponse(null, { status: 204 })
+}

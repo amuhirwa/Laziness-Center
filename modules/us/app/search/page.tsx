@@ -47,28 +47,28 @@ export default async function SearchPage({ searchParams }: Props) {
 
       {clRows.length > 0 && (
         <Section title="Checklists">
-          {clRows.map((r) => <ResultRow key={r.id} href={`/us/checklists/${r.id}`} label={r.name} />)}
+          {clRows.map((r) => <ResultRow key={r.id} href={`/checklists/${r.id}`} label={r.name} />)}
         </Section>
       )}
       {ciRows.length > 0 && (
         <Section title="Checklist items">
-          {ciRows.map((r) => <ResultRow key={r.id} href={`/us/checklists/${r.checklistId}`} label={r.text} />)}
+          {ciRows.map((r) => <ResultRow key={r.id} href={`/checklists/${r.checklistId}`} label={r.text} />)}
         </Section>
       )}
       {wiRows.length > 0 && (
         <Section title="Wishlist">
-          {wiRows.map((r) => <ResultRow key={r.id} href={`/us/wishlists/${r.id}`} label={r.title} badge={r.status} />)}
+          {wiRows.map((r) => <ResultRow key={r.id} href={`/wishlists/${r.id}`} label={r.title} badge={r.status} />)}
         </Section>
       )}
       {plRows.length > 0 && (
         <Section title="Places">
-          {plRows.map((r) => <ResultRow key={r.id} href={`/us/places/${r.id}`} label={r.name} badge={r.status} />)}
+          {plRows.map((r) => <ResultRow key={r.id} href={`/places/${r.id}`} label={r.name} badge={r.status} />)}
         </Section>
       )}
       {cmRows.length > 0 && (
         <Section title="Comments">
           {cmRows.map((r) => {
-            const href = r.itemType === "wishlist" ? `/us/wishlists/${r.itemId}` : r.itemType === "place" ? `/us/places/${r.itemId}` : `/us/checklists/${r.itemId}`
+            const href = r.itemType === "wishlist" ? `/wishlists/${r.itemId}` : r.itemType === "place" ? `/places/${r.itemId}` : `/checklists/${r.itemId}`
             return <ResultRow key={r.id} href={href} label={r.body} />
           })}
         </Section>

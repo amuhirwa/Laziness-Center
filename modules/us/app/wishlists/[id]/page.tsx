@@ -28,7 +28,7 @@ export default async function WishlistItemPage({ params }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <Link href="/us/wishlists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
+        <Link href="/wishlists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
       </div>
       <WishlistItemDetail item={item} reactions={reacts} initialComments={commentRows} hasReacted={hasReacted} />
     </div>

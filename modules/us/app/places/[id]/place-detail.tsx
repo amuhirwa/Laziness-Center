@@ -93,7 +93,7 @@ export default function PlaceDetail({
 
   async function deletePlace() {
     await fetch(base, { method: "DELETE" })
-    router.push("/us/places")
+    router.push("/places")
   }
 
   return (

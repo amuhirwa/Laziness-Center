@@ -27,7 +27,7 @@ export default async function PlacePage({ params }: Props) {
 
   return (
     <div className="space-y-5">
-      <Link href="/us/places" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
+      <Link href="/places" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
       <PlaceDetail place={place} visits={visits} reactions={reacts} initialComments={commentRows} hasReacted={hasReacted} />
     </div>
   )

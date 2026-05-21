@@ -32,7 +32,7 @@ export default async function PlacesPage({ searchParams }: Props) {
 
       <div className="flex gap-1 flex-wrap">
         {STATUSES.map((s) => (
-          <Link key={s} href={`/us/places?status=${s}`}
+          <Link key={s} href={`/places?status=${s}`}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               s === status
                 ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900"
@@ -48,7 +48,7 @@ export default async function PlacesPage({ searchParams }: Props) {
       ) : (
         <div className="space-y-3">
           {rows.map((place) => (
-            <Link key={place.id} href={`/us/places/${place.id}`}
+            <Link key={place.id} href={`/places/${place.id}`}
               className="flex gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
               {place.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element

@@ -21,7 +21,7 @@ export default function PlacesActions() {
     })
     if (res.ok) {
       const place = await res.json() as { id: string }
-      router.push(`/us/places/${place.id}`)
+      router.push(`/places/${place.id}`)
     }
     setPending(false)
   }
@@ -37,7 +37,7 @@ export default function PlacesActions() {
     })
     if (res.ok) {
       const place = await res.json() as { id: string }
-      router.push(`/us/places/${place.id}`)
+      router.push(`/places/${place.id}`)
     }
     setPending(false)
   }

@@ -6,9 +6,9 @@ import { desc, gte } from "drizzle-orm"
 import Link from "next/link"
 
 const SECTION_HREF: Record<string, string> = {
-  checklist: "/us/checklists",
-  wishlist: "/us/wishlists",
-  places: "/us/places",
+  checklist: "/checklists",
+  wishlist: "/wishlists",
+  places: "/places",
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -23,9 +23,9 @@ const KIND_LABEL: Record<string, string> = {
 
 function itemHref(row: { section: string; itemId: string | null }): string | null {
   if (!row.itemId) return null
-  if (row.section === "checklist") return `/us/checklists/${row.itemId}`
-  if (row.section === "wishlist") return `/us/wishlists/${row.itemId}`
-  if (row.section === "places") return `/us/places/${row.itemId}`
+  if (row.section === "checklist") return `/checklists/${row.itemId}`
+  if (row.section === "wishlist") return `/wishlists/${row.itemId}`
+  if (row.section === "places") return `/places/${row.itemId}`
   return null
 }
 
