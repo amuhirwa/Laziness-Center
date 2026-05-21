@@ -84,7 +84,8 @@ export default function PlaceDetail({
       body: JSON.stringify({ itemType: "place", itemId: place.id, body: commentBody }),
     })
     if (res.ok) {
-      setCommentList((prev) => [...prev, await res.json() as Comment])
+      const c = await res.json() as Comment
+      setCommentList((prev) => [...prev, c])
       setCommentBody("")
     }
     setCommenting(false)
