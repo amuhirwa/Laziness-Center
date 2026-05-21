@@ -14,8 +14,8 @@ type Props = { params: Promise<{ id: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const [item] = await db.select({ name: wishlistItems.name }).from(wishlistItems).where(eq(wishlistItems.id, id))
-  return { title: item ? `${item.name} — Laziness Center` : "Us — Laziness Center" }
+  const [item] = await db.select({ title: wishlistItems.title }).from(wishlistItems).where(eq(wishlistItems.id, id))
+  return { title: item ? `${item.title} — Laziness Center` : "Us — Laziness Center" }
 }
 
 export default async function WishlistItemPage({ params }: Props) {
