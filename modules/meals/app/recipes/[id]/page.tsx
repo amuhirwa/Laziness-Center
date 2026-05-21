@@ -6,6 +6,7 @@ import { recipes, cookSessions } from "@/db/schema"
 import type { Ingredient, Step } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
 import Link from "next/link"
+import ShareButton from "./share-button"
 import { checkIngredients, priceIngredients } from "@/lib/pantry"
 import { findSubRecipe } from "@/lib/subrecipe"
 import { notFound } from "next/navigation"
@@ -16,8 +17,16 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ servings
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const [recipe] = await db.select({ name: recipes.name }).from(recipes).where(eq(recipes.id, id))
-  return { title: recipe ? `${recipe.name} — Laziness Center` : "Meals — Laziness Center" }
+  const [recipe] = await db.select({ name: recipes.name, thumbnailUrl: recipes.thumbnailUrl }).from(recipes).where(eq(recipes.id, id))
+  if (!recipe) return { title: "Meals — Laziness Center" }
+  const title = `${recipe.name} — Laziness Center`
+  return {
+    title,
+    openGraph: {
+      title,
+      ...(recipe.thumbnailUrl && { images: [{ url: recipe.thumbnailUrl }] }),
+    },
+  }
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: Props) {
@@ -85,10 +94,13 @@ export default async function RecipeDetailPage({ params, searchParams }: Props) 
             {recipe.mealTypes.length > 0 && <span>{recipe.mealTypes.join(", ")}</span>}
           </div>
         </div>
-        <Link href={`/recipes/${id}/edit`}
-          className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors shrink-0">
-          Edit
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <ShareButton title={recipe.name} />
+          <Link href={`/recipes/${id}/edit`}
+            className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors">
+            Edit
+          </Link>
+        </div>
       </div>
 
       {/* Servings scaler */}
