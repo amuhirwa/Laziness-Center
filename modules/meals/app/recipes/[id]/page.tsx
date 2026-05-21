@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import type { Metadata } from "next"
 import { db } from "@/db"
 import { recipes, cookSessions } from "@/db/schema"
 import type { Ingredient, Step } from "@/db/schema"
@@ -12,6 +13,12 @@ import { headers } from "next/headers"
 import { getUserId } from "@/lib/identity"
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ servings?: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const [recipe] = await db.select({ name: recipes.name }).from(recipes).where(eq(recipes.id, id))
+  return { title: recipe ? `${recipe.name} — Laziness Center` : "Meals — Laziness Center" }
+}
 
 export default async function RecipeDetailPage({ params, searchParams }: Props) {
   const { id } = await params

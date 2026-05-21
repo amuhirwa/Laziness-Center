@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import type { Metadata } from "next"
 import { db } from "@/db"
 import { places, placeVisits, reactions, comments } from "@/db/schema"
 import { and, asc, desc, eq } from "drizzle-orm"
@@ -10,6 +11,12 @@ import { getUserId } from "@/lib/identity"
 import PlaceDetail from "./place-detail"
 
 type Props = { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const [place] = await db.select({ name: places.name }).from(places).where(eq(places.id, id))
+  return { title: place ? `${place.name} — Laziness Center` : "Us — Laziness Center" }
+}
 
 export default async function PlacePage({ params }: Props) {
   const { id } = await params

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import type { Metadata } from "next"
 import { db } from "@/db"
 import { wishlistItems, reactions, comments } from "@/db/schema"
 import { and, asc, eq } from "drizzle-orm"
@@ -10,6 +11,12 @@ import { getUserId } from "@/lib/identity"
 import WishlistItemDetail from "./wishlist-item-detail"
 
 type Props = { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const [item] = await db.select({ name: wishlistItems.name }).from(wishlistItems).where(eq(wishlistItems.id, id))
+  return { title: item ? `${item.name} — Laziness Center` : "Us — Laziness Center" }
+}
 
 export default async function WishlistItemPage({ params }: Props) {
   const { id } = await params

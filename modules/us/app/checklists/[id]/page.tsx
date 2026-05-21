@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import type { Metadata } from "next"
 import { db } from "@/db"
 import { checklists, checklistItems, comments } from "@/db/schema"
 import { asc, eq } from "drizzle-orm"
@@ -8,6 +9,12 @@ import { notFound } from "next/navigation"
 import ChecklistDetail from "./checklist-detail"
 
 type Props = { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const [checklist] = await db.select({ name: checklists.name }).from(checklists).where(eq(checklists.id, id))
+  return { title: checklist ? `${checklist.name} — Laziness Center` : "Us — Laziness Center" }
+}
 
 export default async function ChecklistPage({ params }: Props) {
   const { id } = await params
