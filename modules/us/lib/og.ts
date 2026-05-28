@@ -50,8 +50,12 @@ function extractOffer(product: Record<string, unknown>): { price: string | null;
   const offer = Array.isArray(product.offers) ? product.offers[0] : product.offers
   if (!offer || typeof offer !== "object") return { price: null, currency: null }
   const o = offer as Record<string, unknown>
+  const price = o.price != null ? String(o.price)
+    : o.lowPrice != null ? String(o.lowPrice)
+    : o.highPrice != null ? String(o.highPrice)
+    : null
   return {
-    price: o.price != null ? String(o.price) : null,
+    price,
     currency: typeof o.priceCurrency === "string" ? o.priceCurrency : null,
   }
 }
@@ -62,8 +66,9 @@ export async function scrapeOG(url: string): Promise<OGResult> {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(5000),
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; LazinessCenter/1.0)",
-        "Accept": "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
     })
     if (!res.ok) return empty
