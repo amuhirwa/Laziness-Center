@@ -4,6 +4,8 @@ import { db } from "@/db"
 import { wishlistItems, reactions } from "@/db/schema"
 import { desc, eq, isNotNull, sql } from "drizzle-orm"
 import Link from "next/link"
+import { headers } from "next/headers"
+import { getUserId } from "@/lib/identity"
 import WishlistActions from "./wishlist-actions"
 import TurnBanner from "@/app/components/turn-banner"
 
@@ -15,6 +17,7 @@ type Props = { searchParams: Promise<{ status?: string }> }
 export default async function WishlistPage({ searchParams }: Props) {
   const { status: rawStatus } = await searchParams
   const status = (STATUSES.includes(rawStatus as Status) ? rawStatus : "wanted") as Status
+  const userId = getUserId(await headers())
 
   const rows = await db.select().from(wishlistItems)
     .where(eq(wishlistItems.status, status))
@@ -99,9 +102,9 @@ export default async function WishlistPage({ searchParams }: Props) {
                 <img src={item.imageUrl} alt={item.title} className="w-16 h-16 object-cover rounded-lg shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm leading-tight">{item.title}</p>
+                <p className="font-medium text-sm leading-tight line-clamp-1">{item.title}</p>
                 {item.description && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-1">{item.description}</p>
                 )}
                 <div className="flex items-center gap-3 mt-1.5">
                   {item.price && (
@@ -111,6 +114,9 @@ export default async function WishlistPage({ searchParams }: Props) {
                     <span className="text-xs text-pink-500">♡ {reactMap.get(item.id)}</span>
                   )}
                   {item.isPinned && <span className="text-xs text-yellow-500">★</span>}
+                  {item.hiddenFrom && item.addedBy === userId && (
+                    <span className="text-xs" title="Hidden from partner">🎁</span>
+                  )}
                 </div>
               </div>
             </Link>
