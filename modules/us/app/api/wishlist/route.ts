@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { wishlistItems } from "@/db/schema"
-import { and, desc, eq, isNull, ne, or } from "drizzle-orm"
+import { and, desc, eq, isNull, or } from "drizzle-orm"
 import { getUserId } from "@/lib/identity"
 import { logActivity } from "@/lib/activity"
 
 export async function GET(request: NextRequest) {
   const actor = getUserId(request.headers)
   const status = request.nextUrl.searchParams.get("status") ?? "wanted"
-  const visibleFilter = or(isNull(wishlistItems.hiddenFrom), ne(wishlistItems.hiddenFrom, actor))
+  // Show if not hidden, OR if current user is the one who added it (owner sees their own surprises)
+  const visibleFilter = or(isNull(wishlistItems.hiddenFrom), eq(wishlistItems.addedBy, actor))
 
   const rows = status === "all"
     ? await db.select().from(wishlistItems)

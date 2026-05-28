@@ -41,7 +41,9 @@ export default function WishlistItemDetail({
   const partnerName = partnerEmail?.split("@")[0]
 
   async function toggleSurprise() {
-    const newVal = isHidden ? null : partnerEmail
+    // When hiding, use partnerEmail if known, otherwise a sentinel that no real email matches.
+    // The API filters by: show if hidden_from IS NULL OR added_by = current_user.
+    const newVal = isHidden ? null : (partnerEmail ?? "__hidden__")
     const res = await fetch(base, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -143,11 +145,10 @@ export default function WishlistItemDetail({
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-semibold text-lg leading-tight">{item.title}</h2>
             <div className="flex gap-2 shrink-0 flex-wrap justify-end">
-              {isOwner && partnerEmail && (
+              {isOwner && (
                 <button onClick={toggleSurprise}
-                  title={isHidden ? `Show to ${partnerName}` : `Hide from ${partnerName}`}
                   className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${isHidden ? "border-pink-300 text-pink-500 bg-pink-50 dark:bg-pink-900/20" : "border-neutral-200 dark:border-neutral-700 text-neutral-400"}`}>
-                  {isHidden ? `🎁 Hidden from ${partnerName}` : "🎁 Surprise mode"}
+                  {isHidden ? `🎁 Hidden${partnerName ? ` from ${partnerName}` : ""}` : "🎁 Surprise mode"}
                 </button>
               )}
               <button onClick={() => setEditing(true)} className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">Edit</button>

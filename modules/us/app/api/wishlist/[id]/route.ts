@@ -12,8 +12,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const actor = getUserId(request.headers)
   const [item] = await db.select().from(wishlistItems).where(eq(wishlistItems.id, id))
   if (!item) return NextResponse.json({ error: "not found" }, { status: 404 })
-  // Hidden from this user
-  if (item.hiddenFrom && item.hiddenFrom === actor) return NextResponse.json({ error: "not found" }, { status: 404 })
+  // Hidden — only the owner (addedBy) can see it; everyone else gets 404
+  if (item.hiddenFrom && item.addedBy !== actor) return NextResponse.json({ error: "not found" }, { status: 404 })
 
   const reacts = await db.select().from(reactions)
     .where(and(eq(reactions.itemType, "wishlist"), eq(reactions.itemId, id)))
