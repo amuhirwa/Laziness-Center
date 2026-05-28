@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 
 type TurnData = { currentUserId: string; currentUserName: string } | null
 
-export default function TurnBanner({ category }: { category: "checklists" | "wishlists" | "places" }) {
+export default function TurnBanner({ category }: { category: "checklists" | "wishlists" | "places" | "activities" }) {
   const [turn, setTurn] = useState<TurnData>(null)
   const [passing, setPassing] = useState(false)
 

@@ -6,7 +6,7 @@ import { getUserId } from "@/lib/identity"
 
 type Params = { params: Promise<{ category: string }> }
 
-const VALID = new Set(["checklists", "wishlists", "places"])
+const VALID = new Set(["checklists", "wishlists", "places", "activities"])
 
 export async function GET(_request: NextRequest, { params }: Params) {
   const { category } = await params

@@ -8,7 +8,9 @@ const NAV = [
   { label: "Checklists", href: "/us/checklists" },
   { label: "Wishlists", href: "/us/wishlists" },
   { label: "Places", href: "/us/places" },
+  { label: "Activities", href: "/us/activities" },
   { label: "Plans", href: "/us/plans" },
+  { label: "Decide 🎡", href: "/us/decide" },
   { label: "Activity", href: "/us/activity" },
   { label: "Stats", href: "/us/stats" },
 ]

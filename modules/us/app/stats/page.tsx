@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { places, placeVisits, wishlistItems, checklists, checklistItems, activity } from "@/db/schema"
+import { places, placeVisits, wishlistItems, checklists, checklistItems, activity, decisionHistory, activities } from "@/db/schema"
 import { and, count, eq, gte, isNotNull, sql } from "drizzle-orm"
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -40,6 +40,15 @@ export default async function StatsPage() {
 
   const wantedTotal = budgetByStatus.filter((r) => r.status === "wanted").map((r) => `${r.currency ?? "RWF"} ${parseFloat(r.total).toLocaleString()}`).join(" + ")
   const spentTotal = budgetByStatus.filter((r) => r.status !== "wanted").map((r) => `${r.currency ?? "RWF"} ${parseFloat(r.total).toLocaleString()}`).join(" + ")
+
+  // Decisions
+  const decisionsThisYear = await db.select({ c: count() }).from(decisionHistory)
+    .where(gte(decisionHistory.decidedAt, yearStart))
+  const decisionsTotal = await db.select({ c: count() }).from(decisionHistory)
+
+  // Activities done
+  const activitiesDoneThisYear = await db.select({ c: count() }).from(activities)
+    .where(and(eq(activities.status, "done"), gte(activities.updatedAt, yearStart)))
 
   // Checklists
   const itemsCheckedOff = await db.select({ c: count() }).from(checklistItems).where(eq(checklistItems.completed, true))
@@ -81,6 +90,8 @@ export default async function StatsPage() {
           <StatCard label="Wishlists cleared" value={clearedThisYear[0]?.c ?? 0} sub="bought or received" />
           <StatCard label="Items checked off" value={itemsCheckedThisYear[0]?.c ?? 0} />
           <StatCard label="Fully done lists" value={fullyDoneLists} sub="all items complete" />
+          <StatCard label="Activities done" value={activitiesDoneThisYear[0]?.c ?? 0} />
+          <StatCard label="Decisions made" value={decisionsThisYear[0]?.c ?? 0} sub="spun the wheel" />
         </div>
       </div>
 
@@ -90,6 +101,7 @@ export default async function StatsPage() {
         <div className="grid grid-cols-2 gap-3">
           <StatCard label="Total place visits" value={placesVisitedTotal[0]?.c ?? 0} />
           <StatCard label="Items ever checked" value={itemsCheckedOff[0]?.c ?? 0} />
+          <StatCard label="Total decisions" value={decisionsTotal[0]?.c ?? 0} sub="wheel spins" />
           {wantedTotal && <StatCard label="Wanted" value={wantedTotal} />}
           {spentTotal && <StatCard label="Spent" value={spentTotal} />}
         </div>

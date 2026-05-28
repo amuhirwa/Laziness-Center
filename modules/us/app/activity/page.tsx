@@ -9,6 +9,9 @@ const SECTION_HREF: Record<string, string> = {
   checklist: "/checklists",
   wishlist: "/wishlists",
   places: "/places",
+  activities: "/activities",
+  plans: "/plans",
+  decide: "/decide",
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -19,6 +22,7 @@ const KIND_LABEL: Record<string, string> = {
   commented: "commented on",
   visited: "visited",
   archived: "archived",
+  decide: "decided on",
 }
 
 function itemHref(row: { section: string; itemId: string | null }): string | null {
@@ -26,6 +30,8 @@ function itemHref(row: { section: string; itemId: string | null }): string | nul
   if (row.section === "checklist") return `/checklists/${row.itemId}`
   if (row.section === "wishlist") return `/wishlists/${row.itemId}`
   if (row.section === "places") return `/places/${row.itemId}`
+  if (row.section === "activities") return `/activities/${row.itemId}`
+  if (row.section === "plans") return `/plans/${row.itemId}`
   return null
 }
 

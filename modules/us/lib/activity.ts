@@ -1,8 +1,8 @@
 import { db } from "@/db"
 import { activity } from "@/db/schema"
 
-type Kind = "added" | "status-changed" | "reacted" | "completed" | "commented" | "visited" | "archived"
-type Section = "checklist" | "wishlist" | "places" | "plans"
+type Kind = "added" | "status-changed" | "reacted" | "completed" | "commented" | "visited" | "archived" | "decide"
+type Section = "checklist" | "wishlist" | "places" | "plans" | "activities" | "decide"
 
 export async function logActivity(opts: {
   kind: Kind

@@ -130,3 +130,30 @@ export const turns = pgTable("turns", {
   currentUserId: text("current_user_id").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const activities = pgTable("activities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category"),
+  status: text("status").notNull().default("wantToDo"),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  linkedType: text("linked_type"),
+  linkedId: text("linked_id"),
+  linkedUrl: text("linked_url"),
+  addedBy: text("added_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const decisionHistory = pgTable("decision_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mode: text("mode").notNull(),
+  winnerTitle: text("winner_title").notNull(),
+  winnerType: text("winner_type"),
+  winnerId: text("winner_id"),
+  candidates: jsonb("candidates").notNull(),
+  votes: jsonb("votes"),
+  decidedBy: text("decided_by").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+})

@@ -3,7 +3,7 @@
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
 **Last updated:** 2026-05-28
-**Updated by:** Claude Code — us module v2: date planner, map integration, product scraping, budget tracking, whose turn, surprise mode, travel journal, checklist templates, stats page, smart nudges
+**Updated by:** Claude Code — us module v3: Activities section, Decide wheel (quick spin + take-turns weighted voting), decision history, stats updates
 
 ---
 
@@ -89,7 +89,19 @@ sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Last Session Summary (us module v2 — full feature expansion)
+## Last Session Summary (us module v3 — Activities + Decide wheel)
+
+- **Activities section** — new fourth "things to do together" section. Status tabs (wantToDo/done/skipped), categories (game/cooking/movie/show/sport/music/outdoor/other) with emoji icons, reactions, comments, pin. Optional link to a place, wishlist item, or Meals recipe. TurnBanner on list page. API: GET/POST `/api/activities`, GET/PATCH/DELETE `/api/activities/[id]`, POST/DELETE `/api/activities/[id]/react`.
+- **Decide wheel** (`/us/decide`) — draw candidates from Places (wantToGo), Wishlist (wanted), Activities (wantToDo). Select 2–6, choose Quick spin (random) or Weighted vote (take-turns: User 1 locks scores, User 2 gets fresh sliders, combined → weighted random). CSS `conic-gradient` spinning wheel with smooth deceleration animation. Winner reveal with link to item detail. "Save decision" posts to history.
+- **Decision history** (`/us/decide/history`) — saved decisions with winner, mode badge, candidate list + scores. Also shown as last-5 on the decide page.
+- **Decision API** — `GET/POST /api/decisions`. Decision history stored in `decision_history` table. Logs `kind: "decide"` to activity feed.
+- **Schema** — `activities` and `decision_history` tables added. `reactions` and `comments` CHECK constraints on `item_type` dropped (broadened for 'activity' type).
+- **Stats** — Activities done this year, Decisions made this year, Total decisions (all time) added.
+- **Nav** — "Activities" and "Decide 🎡" added (8 items total, horizontal scroll).
+- **Activity feed** — "activities", "plans", "decide" sections + "decide" kind mapped.
+- **Turns** — extended to support "activities" category.
+
+## Previous Last Session Summary (us module v2 — full feature expansion)
 
 - **Schema migrations** — `checklists.isTemplate`, `wishlistItems.hiddenFrom + extraImages`, `places.lat/lng/address/extraImages`, `placeVisits.mood/photoUrls`, new `date_plans` + `turns` tables. All idempotent in `instrumentation.ts`.
 - **Product scraping** — `lib/og.ts` rewired to manual `fetch` + HTML parse; now extracts schema.org `Product` price/currency/extraImages, OG price meta tags. Wishlist quick-add stores price and extra product images automatically.
@@ -196,7 +208,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 **Manhwa module (`modules/manhwa/`):** Python FastAPI, scraper, catalog, reading list, widget, service-token auth.
 
-**Us module (`modules/us/`) v2:**
+**Us module (`modules/us/`) v3:**
 - Checklists: list (pinned + active + archived + templates), detail with items (complete/uncomplete), add/delete, pin/archive/duplicate, save-as-template, comments. Template section + "Start from template" in new-checklist form.
 - Wishlists: quick-add via URL (scrapes title, description, image, **price, currency, extra product images**), manual add, status transitions, reactions, comments, edit/delete. **Budget totals** (Wanted/Bought/Received) above tabs. **Surprise mode** hides items from partner (gift idea).
 - Places: quick-add via URL or **Google Maps link** (short-link redirect + lat/lng parsing + Nominatim reverse-geocode), **Map Search** (Nominatim autocomplete → one-click add), manual add. **Leaflet map view** at `/places/map`. **Mini-map** on detail page. Visit log extended with **mood picker** (😍😊😐😕🚫) and **photo URLs**.
@@ -204,6 +216,8 @@ sudo nginx -t && sudo systemctl reload nginx
 - **Stats page**: year-to-date + all-time metrics, budget totals, status distributions, 12-month activity bar chart.
 - **Whose turn tracker**: per-category turn flag, "Pass" button on each list page.
 - **Smart nudges**: 6-hour background checks via `setInterval` in `instrumentation.ts`; notifies via Center notification API.
+- **Activities**: games, cooking, movies, sports, etc. Optional link to place/wishlist/recipe. Reactions, comments, status (wantToDo/done/skipped), TurnBanner.
+- **Decide wheel** (`/decide`): pick 2–6 candidates from Places, Wishlist, or Activities. Quick spin (random) or Weighted vote (take-turns private scoring, combined → CSS spinning wheel). Saves decision history.
 - Activity feed, Search, Widget (all from v1).
 - Manifest: `docs/modules/us-manifest.yaml`.
 

@@ -319,6 +319,44 @@ export async function register() {
     )
   `)
 
+  // ── Activities + Decision history ────────────────────────────────────────
+  // Drop old item_type CHECK constraints so 'activity' is a valid type
+  await db.execute(sql`ALTER TABLE reactions DROP CONSTRAINT IF EXISTS reactions_item_type_check`)
+  await db.execute(sql`ALTER TABLE comments DROP CONSTRAINT IF EXISTS comments_item_type_check`)
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS activities (
+      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      title       TEXT        NOT NULL,
+      description TEXT,
+      category    TEXT,
+      status      TEXT        NOT NULL DEFAULT 'wantToDo',
+      is_pinned   BOOLEAN     NOT NULL DEFAULT false,
+      linked_type TEXT,
+      linked_id   TEXT,
+      linked_url  TEXT,
+      added_by    TEXT        NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS ac_status_pin ON activities (status, is_pinned, created_at DESC)`)
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS decision_history (
+      id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      mode         TEXT        NOT NULL,
+      winner_title TEXT        NOT NULL,
+      winner_type  TEXT,
+      winner_id    TEXT,
+      candidates   JSONB       NOT NULL,
+      votes        JSONB,
+      decided_by   TEXT        NOT NULL,
+      decided_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS dh_decided ON decision_history (decided_at DESC)`)
+
   // ── Smart nudges ─────────────────────────────────────────────────────────
   // First check 30s after startup, then every 6 hours
   setTimeout(() => {
