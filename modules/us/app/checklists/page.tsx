@@ -5,10 +5,16 @@ import { checklists, checklistItems } from "@/db/schema"
 import { and, count, eq } from "drizzle-orm"
 import Link from "next/link"
 import NewChecklistForm from "./new-form"
+import TurnBanner from "@/app/components/turn-banner"
+import UseTemplateButton from "./use-template-button"
 
 export default async function ChecklistsPage() {
   const rows = await db.select().from(checklists)
-    .where(eq(checklists.isArchived, false))
+    .where(and(eq(checklists.isArchived, false), eq(checklists.isTemplate, false)))
+    .orderBy()
+
+  const templates = await db.select().from(checklists)
+    .where(eq(checklists.isTemplate, true))
     .orderBy()
 
   // Count total / done items per checklist
@@ -54,7 +60,8 @@ export default async function ChecklistsPage() {
         </Link>
       </div>
 
-      <NewChecklistForm />
+      <TurnBanner category="checklists" />
+      <NewChecklistForm templates={templates.map((t) => ({ id: t.id, name: t.name }))} />
 
       {pinned.length > 0 && (
         <div className="space-y-2">
@@ -70,6 +77,18 @@ export default async function ChecklistsPage() {
         </div>
       ) : pinned.length === 0 && (
         <p className="text-sm text-neutral-400 dark:text-neutral-500">No checklists yet. Create one above.</p>
+      )}
+
+      {templates.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+          <p className="text-xs uppercase tracking-wide text-neutral-400 dark:text-neutral-500">Templates</p>
+          {templates.map((tpl) => (
+            <div key={tpl.id} className="flex items-center gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <Link href={`/checklists/${tpl.id}`} className="flex-1 text-sm font-medium">{tpl.name}</Link>
+              <UseTemplateButton id={tpl.id} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

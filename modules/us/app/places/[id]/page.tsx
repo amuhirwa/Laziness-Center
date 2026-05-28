@@ -9,6 +9,7 @@ import { notFound } from "next/navigation"
 import { headers } from "next/headers"
 import { getUserId } from "@/lib/identity"
 import PlaceDetail from "./place-detail"
+import PlaceMiniMap from "./place-mini-map"
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -36,6 +37,9 @@ export default async function PlacePage({ params }: Props) {
     <div className="space-y-5">
       <Link href="/places" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
       <PlaceDetail place={place} visits={visits} reactions={reacts} initialComments={commentRows} hasReacted={hasReacted} />
+      {place.lat && place.lng && (
+        <PlaceMiniMap lat={parseFloat(place.lat)} lng={parseFloat(place.lng)} name={place.name} status={place.status} id={place.id} />
+      )}
     </div>
   )
 }

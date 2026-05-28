@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
     description: og.description,
     url: body.url,
     imageUrl: og.imageUrl,
+    extraImages: og.extraImages,
+    price: og.price,
+    currency: og.currency,
     addedBy: actor,
   }).returning()
 

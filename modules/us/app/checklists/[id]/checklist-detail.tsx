@@ -104,6 +104,15 @@ export default function ChecklistDetail({
     }
   }
 
+  async function saveAsTemplate() {
+    await fetch(base, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isTemplate: !checklist.isTemplate }),
+    })
+    router.refresh()
+  }
+
   const done = items.filter((i) => i.completed)
   const remaining = items.filter((i) => !i.completed)
 
@@ -116,6 +125,9 @@ export default function ChecklistDetail({
         </button>
         <button onClick={duplicateChecklist} className="text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
           Duplicate
+        </button>
+        <button onClick={saveAsTemplate} className="text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+          {checklist.isTemplate ? "Remove template" : "Save as template"}
         </button>
         <button onClick={archiveChecklist} className="text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors ml-auto">
           {checklist.isArchived ? "Unarchive" : "Archive"}

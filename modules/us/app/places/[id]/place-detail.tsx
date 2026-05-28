@@ -34,6 +34,8 @@ export default function PlaceDetail({
   const [showVisitForm, setShowVisitForm] = useState(false)
   const [visitNotes, setVisitNotes] = useState("")
   const [visitRating, setVisitRating] = useState<number | "">("")
+  const [visitMood, setVisitMood] = useState("")
+  const [visitPhotos, setVisitPhotos] = useState(["", "", ""])
   const [commenting, setCommenting] = useState(false)
   const router = useRouter()
 
@@ -62,7 +64,12 @@ export default function PlaceDetail({
     const res = await fetch(`${base}/visits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating: visitRating || undefined, notes: visitNotes || undefined }),
+      body: JSON.stringify({
+        rating: visitRating || undefined,
+        notes: visitNotes || undefined,
+        mood: visitMood || undefined,
+        photoUrls: visitPhotos.filter(Boolean),
+      }),
     })
     if (res.ok) {
       const v = await res.json() as Visit
@@ -71,6 +78,8 @@ export default function PlaceDetail({
       setShowVisitForm(false)
       setVisitNotes("")
       setVisitRating("")
+      setVisitMood("")
+      setVisitPhotos(["", "", ""])
     }
   }
 
@@ -136,18 +145,55 @@ export default function PlaceDetail({
       </div>
 
       {showVisitForm && (
-        <form onSubmit={logVisit} className="space-y-2 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+        <form onSubmit={logVisit} className="space-y-3 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
           <p className="text-xs font-medium">Log a visit</p>
-          <div className="flex gap-2">
-            {[1,2,3,4,5].map((n) => (
-              <button type="button" key={n} onClick={() => setVisitRating(n === visitRating ? "" : n)}
-                className={`w-8 h-8 rounded-full text-sm transition-colors ${visitRating === n ? "bg-yellow-400 text-white" : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"}`}>
-                {n}
-              </button>
+
+          {/* Mood */}
+          <div>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">Mood</p>
+            <div className="flex gap-2">
+              {["😍", "😊", "😐", "😕", "🚫"].map((emoji) => (
+                <button type="button" key={emoji} onClick={() => setVisitMood(visitMood === emoji ? "" : emoji)}
+                  className={`w-9 h-9 rounded-full text-lg transition-all ${visitMood === emoji ? "ring-2 ring-neutral-400 scale-110" : "opacity-60 hover:opacity-100"}`}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rating */}
+          <div>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">Rating</p>
+            <div className="flex gap-2">
+              {[1,2,3,4,5].map((n) => (
+                <button type="button" key={n} onClick={() => setVisitRating(n === visitRating ? "" : n)}
+                  className={`w-8 h-8 rounded-full text-sm transition-colors ${visitRating === n ? "bg-yellow-400 text-white" : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"}`}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <textarea value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} rows={2} placeholder="Notes…"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400 resize-none" />
+
+          {/* Photos */}
+          <div className="space-y-1">
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">Photos (URLs)</p>
+            {visitPhotos.map((url, i) => (
+              <div key={i} className="space-y-1">
+                <input value={url} onChange={(e) => setVisitPhotos((prev) => prev.map((v, j) => j === i ? e.target.value : v))}
+                  placeholder={`Photo ${i + 1} URL…`}
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-400" />
+                {url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={url} alt="" className="h-20 w-auto rounded-lg object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                )}
+              </div>
             ))}
           </div>
-          <textarea value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} rows={2} placeholder="Notes… (what did you eat? was it good?)"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400 resize-none" />
+
           <div className="flex gap-2">
             <button type="submit" className="text-sm px-4 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium hover:opacity-90">Save</button>
             <button type="button" onClick={() => setShowVisitForm(false)} className="text-sm px-4 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700">Cancel</button>
@@ -160,12 +206,23 @@ export default function PlaceDetail({
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-wide text-neutral-400 dark:text-neutral-500">Visits ({visits.length})</p>
           {visits.map((v) => (
-            <div key={v.id} className="text-sm p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800">
+            <div key={v.id} className="text-sm p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-400">{new Date(v.visitedAt).toLocaleDateString()}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-neutral-400">{new Date(v.visitedAt).toLocaleDateString()}</span>
+                  {v.mood && <span className="text-base">{v.mood}</span>}
+                </div>
                 {v.rating && <span className="text-xs text-yellow-500">{"★".repeat(v.rating)}</span>}
               </div>
-              {v.notes && <p className="mt-1">{v.notes}</p>}
+              {v.notes && <p>{v.notes}</p>}
+              {v.photoUrls && v.photoUrls.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {v.photoUrls.map((url, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={url} alt="" className="w-20 h-20 object-cover rounded-lg" />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -8,7 +8,9 @@ const NAV = [
   { label: "Checklists", href: "/us/checklists" },
   { label: "Wishlists", href: "/us/wishlists" },
   { label: "Places", href: "/us/places" },
+  { label: "Plans", href: "/us/plans" },
   { label: "Activity", href: "/us/activity" },
+  { label: "Stats", href: "/us/stats" },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

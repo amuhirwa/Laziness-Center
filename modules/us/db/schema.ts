@@ -1,5 +1,5 @@
 import {
-  pgTable, text, boolean, timestamp, integer, numeric, jsonb, uuid, uniqueIndex,
+  pgTable, text, boolean, timestamp, integer, numeric, jsonb, uuid, uniqueIndex, date,
 } from "drizzle-orm/pg-core"
 
 export const checklists = pgTable("checklists", {
@@ -8,6 +8,7 @@ export const checklists = pgTable("checklists", {
   description: text("description"),
   isPinned: boolean("is_pinned").notNull().default(false),
   isArchived: boolean("is_archived").notNull().default(false),
+  isTemplate: boolean("is_template").notNull().default(false),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -34,11 +35,13 @@ export const wishlistItems = pgTable("wishlist_items", {
   description: text("description"),
   url: text("url"),
   imageUrl: text("image_url"),
+  extraImages: text("extra_images").array().notNull().default([]),
   price: numeric("price", { precision: 12, scale: 2 }),
   currency: text("currency"),
   category: text("category"),
   status: text("status").notNull().default("wanted"),
   isPinned: boolean("is_pinned").notNull().default(false),
+  hiddenFrom: text("hidden_from"),
   addedBy: text("added_by").notNull(),
   statusChangedBy: text("status_changed_by"),
   statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
@@ -50,9 +53,13 @@ export const places = pgTable("places", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   location: text("location"),
+  address: text("address"),
   description: text("description"),
   url: text("url"),
   imageUrl: text("image_url"),
+  extraImages: text("extra_images").array().notNull().default([]),
+  lat: numeric("lat", { precision: 10, scale: 7 }),
+  lng: numeric("lng", { precision: 10, scale: 7 }),
   category: text("category"),
   status: text("status").notNull().default("wantToGo"),
   isPinned: boolean("is_pinned").notNull().default(false),
@@ -67,6 +74,8 @@ export const placeVisits = pgTable("place_visits", {
   visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
   rating: integer("rating"),
   notes: text("notes"),
+  mood: text("mood"),
+  photoUrls: text("photo_urls").array().notNull().default([]),
   loggedBy: text("logged_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
@@ -101,4 +110,23 @@ export const activity = pgTable("activity", {
   itemTitle: text("item_title"),
   meta: jsonb("meta"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const datePlans = pgTable("date_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  date: date("date").notNull(),
+  placeId: text("place_id"),
+  checklistId: text("checklist_id"),
+  notes: text("notes"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const turns = pgTable("turns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  category: text("category").notNull().unique(),
+  currentUserId: text("current_user_id").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })

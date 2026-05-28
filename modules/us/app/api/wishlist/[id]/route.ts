@@ -7,10 +7,13 @@ import { logActivity } from "@/lib/activity"
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   const { id } = await params
+  const actor = getUserId(request.headers)
   const [item] = await db.select().from(wishlistItems).where(eq(wishlistItems.id, id))
   if (!item) return NextResponse.json({ error: "not found" }, { status: 404 })
+  // Hidden from this user
+  if (item.hiddenFrom && item.hiddenFrom === actor) return NextResponse.json({ error: "not found" }, { status: 404 })
 
   const reacts = await db.select().from(reactions)
     .where(and(eq(reactions.itemType, "wishlist"), eq(reactions.itemId, id)))
@@ -26,6 +29,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const body = await request.json() as {
     title?: string; description?: string; url?: string; imageUrl?: string
     price?: number; currency?: string; category?: string; status?: string; isPinned?: boolean
+    hiddenFrom?: string | null
   }
 
   const actor = getUserId(request.headers)
@@ -38,6 +42,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (body.currency != null) patch.currency = body.currency
   if (body.category != null) patch.category = body.category
   if (body.isPinned != null) patch.isPinned = body.isPinned
+  if ("hiddenFrom" in body) patch.hiddenFrom = body.hiddenFrom ?? null
   if (body.status != null) {
     const [before] = await db.select({ status: wishlistItems.status }).from(wishlistItems).where(eq(wishlistItems.id, id))
     patch.status = body.status

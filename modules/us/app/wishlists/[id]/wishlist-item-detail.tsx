@@ -15,11 +15,15 @@ export default function WishlistItemDetail({
   reactions: initialReactions,
   initialComments,
   hasReacted,
+  currentUserId,
+  partnerEmail,
 }: {
   item: Item
   reactions: Reaction[]
   initialComments: Comment[]
   hasReacted: boolean
+  currentUserId: string
+  partnerEmail: string | null
 }) {
   const [item, setItem] = useState(initial)
   const [reacted, setReacted] = useState(hasReacted)
@@ -31,6 +35,20 @@ export default function WishlistItemDetail({
   const [editTitle, setEditTitle] = useState(item.title)
   const [editDesc, setEditDesc] = useState(item.description ?? "")
   const router = useRouter()
+
+  const isOwner = item.addedBy === currentUserId
+  const isHidden = !!item.hiddenFrom
+  const partnerName = partnerEmail?.split("@")[0]
+
+  async function toggleSurprise() {
+    const newVal = isHidden ? null : partnerEmail
+    const res = await fetch(base, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hiddenFrom: newVal }),
+    })
+    if (res.ok) setItem(await res.json() as Item)
+  }
 
   const base = `/us/api/wishlist/${item.id}`
 
@@ -94,8 +112,18 @@ export default function WishlistItemDetail({
   return (
     <div className="space-y-5">
       {item.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.imageUrl} alt={item.title} className="w-full h-52 object-cover rounded-xl" />
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.imageUrl} alt={item.title} className="w-full h-52 object-cover rounded-xl" />
+          {item.extraImages && item.extraImages.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {item.extraImages.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-lg shrink-0" />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {editing ? (
@@ -114,7 +142,14 @@ export default function WishlistItemDetail({
         <div>
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-semibold text-lg leading-tight">{item.title}</h2>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+              {isOwner && partnerEmail && (
+                <button onClick={toggleSurprise}
+                  title={isHidden ? `Show to ${partnerName}` : `Hide from ${partnerName}`}
+                  className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${isHidden ? "border-pink-300 text-pink-500 bg-pink-50 dark:bg-pink-900/20" : "border-neutral-200 dark:border-neutral-700 text-neutral-400"}`}>
+                  {isHidden ? `🎁 Hidden from ${partnerName}` : "🎁 Surprise mode"}
+                </button>
+              )}
               <button onClick={() => setEditing(true)} className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">Edit</button>
               <button onClick={deleteItem} className="text-xs text-neutral-400 hover:text-red-500">Delete</button>
             </div>

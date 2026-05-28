@@ -2,16 +2,16 @@
 
 > Living progress log. Updated by Claude Code at the end of every meaningful session.
 
-**Last updated:** 2026-05-21
-**Updated by:** Claude Code — us module deployed + bug fixes
+**Last updated:** 2026-05-28
+**Updated by:** Claude Code — us module v2: date planner, map integration, product scraping, budget tracking, whose turn, surprise mode, travel journal, checklist templates, stats page, smart nudges
 
 ---
 
 ## Current Phase
 
-**Phase 8 — `us` module (deployed, live at lazy.lovey.tv/us)**
+**Phase 8 — `us` module v2 (needs rebuild + deploy)**
 
-All phases through 7 complete. Forward-auth wired. `us` module live — checklists, wishlists, places, activity, search, widget. Pending full walkthrough sign-off from the user.
+All v2 features built. Requires `npm install` at root (leaflet added) then `docker compose up --build web-us-1` to deploy.
 
 ## Deployment topology
 
@@ -25,7 +25,11 @@ Internet → nginx (host, :443, TLS via certbot)
 
 nginx is already running on this VPS (serving isonga.makhax.com). Caddy is NOT the outermost TLS terminator — it serves plain HTTP on loopback only. nginx terminates TLS via certbot certs.
 
-**Implication for forward-auth:** Caddy's `forward_auth` directives point to `pocket-id:1411/api/auth/verify`. Pocket-ID verifies the session cookie and injects `Remote-User`, `Remote-Email`, `Remote-Name`, `Remote-Groups` headers. Caddy then forwards these to modules. Modules read `Remote-Email` as the user identity. See `docs/operations/pocket-id-setup.md` for the full setup and verification steps.
+**Forward-auth:** Caddy's `forward_auth` directives point to **`center:3000`**, not pocket-id. Pocket-ID v2 does not expose a usable forward-auth endpoint. The center exposes two endpoints:
+- `GET /api/auth/verify` — required auth (pantry, us, manhwa). Returns 200 + `Remote-Email`/`Remote-Name` headers for authenticated users; returns 302 to `/login?callbackUrl=<original-uri>` for unauthenticated users.
+- `GET /api/auth/identify` — optional auth (meals). Always returns 200; injects `Remote-Email` header only when a session exists. Unauthenticated requests fall through as `guest@lovey.tv`.
+
+Modules read `Remote-Email` as the user identity via `getUserId(headers)`. See `docs/operations/pocket-id-setup.md` for Pocket-ID OIDC setup (still used for the login flow itself).
 
 ## nginx setup (one-time, outside docker-compose)
 
@@ -85,7 +89,35 @@ sudo ln -s /etc/nginx/sites-available/laziness /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Last Session Summary (deployment + post-deploy fixes)
+## Last Session Summary (us module v2 — full feature expansion)
+
+- **Schema migrations** — `checklists.isTemplate`, `wishlistItems.hiddenFrom + extraImages`, `places.lat/lng/address/extraImages`, `placeVisits.mood/photoUrls`, new `date_plans` + `turns` tables. All idempotent in `instrumentation.ts`.
+- **Product scraping** — `lib/og.ts` rewired to manual `fetch` + HTML parse; now extracts schema.org `Product` price/currency/extraImages, OG price meta tags. Wishlist quick-add stores price and extra product images automatically.
+- **Budget tracking** — Wishlist page shows Wanted/Bought/Received totals above the status tabs.
+- **Map integration** — Nominatim proxy (`/api/places/nominatim`), Leaflet map view at `/places/map`, "Map Search" tab in places-actions, Google Maps short-link redirect follow + lat/lng coordinate parsing, mini-map on place detail page.
+- **Date planner** — New section: `Plans` in nav. CRUD API + pages (list, new, detail with inline checklist toggle). Widget updated to surface plans within 3 days.
+- **Whose turn tracker** — `turns` table, `GET/POST /api/turns/[category]`, `TurnBanner` client component on all 3 list pages.
+- **Surprise mode** — `hiddenFrom` field on wishlist items. API filters hidden items per-user. Toggle button on detail page (owner only, gift-idea use case).
+- **Travel journal** — Extended visit log form: mood picker (😍😊😐😕🚫), up to 3 photo URLs with live preview. Visit cards show mood emoji and photo thumbnails.
+- **Checklist templates** — `isTemplate` flag. "Save as template" button on detail page. Templates section on list page with "Use" button. "Start from template" expander in new-checklist form.
+- **Stats page** — New `/stats` page: this-year + all-time metrics, budget totals, place/wishlist status distributions, 12-month activity bar chart (pure CSS, no JS library).
+- **Smart nudges** — 4 nudge checks in `instrumentation.ts` via `setInterval` every 6 hours: stale wishlist items (60d), no place visit (21d), upcoming plans (today/tomorrow), idle checklists (14d). Redis dedup keys prevent re-notification within 48h.
+
+## Previous Last Session Summary (recipe edit thumbnail + cook history)
+
+- **Thumbnail on edit** — `modules/meals/app/recipes/[id]/edit/page.tsx` now loads, previews, and saves `thumbnailUrl`. Added URL input field with live image preview below it. PUT handler type updated to accept `thumbnailUrl`.
+- **Cook history page** — new `modules/meals/app/history/page.tsx`. Lists all cooked sessions newest-first (up to 100): recipe thumbnail, name (linked), date, star rating, servings, cook time, notes. Accessible via new **History** link added to the meals nav bar in `layout.tsx`.
+
+## Previous Last Session Summary (forward-auth rewrite + meals public access + fixes)
+
+- **Forward-auth rewrite** — Pocket-ID v2 `/api/auth/verify` doesn't exist (returns 404). Rewrote the auth layer: created two new center API routes (`/api/auth/verify` required, `/api/auth/identify` optional) that validate the NextAuth session and inject `Remote-Email`. Updated all Caddy `forward_auth` blocks from `pocket-id:1411` → `center:3000`. Login page updated to accept `callbackUrl` query param so forward-auth redirects land back at the right page.
+- **Meals public access** — `/meals` is now publicly accessible without login. Unauthenticated users get identity `guest@lovey.tv`. Guests see all recipes but cannot add, import, or edit. Import/Add/Edit buttons hidden in the UI; API routes return 403 for guests. Logged-in users see their own cook history and sessions via the `identify` endpoint.
+- **us module CSS fix** — `modules/us/postcss.config.mjs` was missing; Tailwind classes were not being compiled. Added the file (identical to the meals module config). Styles now render correctly.
+- **OG metadata + share button** — Recipe detail page now sets `openGraph.images` from `thumbnailUrl` so WhatsApp/iMessage previews show the recipe photo. Share button added to recipe header (Web Share API on mobile, clipboard copy on desktop). `generateMetadata` added to recipe, checklist, wishlist, and place detail pages so shared links show the item name in the title.
+- **Orphaned pantry data** — 7 inventory items under empty `user_id` (pre-identity-migration data) deleted from DB. 1 item under `muhirwaalain5@gmail.com` retained.
+- **Caddy config stale** — Caddy had been running for 3 days without restarting, so the `/us*` route added since last restart was unknown to it. Fixed by `docker compose restart caddy`.
+
+## Previous Last Session Summary (deployment + post-deploy fixes)
 
 - **us module deployed** — running on VPS as `web-us-1`. Fixed two bugs discovered at deploy time:
   - `place-detail.tsx`: `await` inside non-async setState callback → extracted to local variable before setState call (build error).
@@ -152,9 +184,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## What's Built and Working
 
-**Infrastructure:** docker-compose (8 services), Caddyfile (TLS, per-module routing + forward-auth for all module routes including `/us*`), Postgres init (5 schemas), `.env.example`.
+**Infrastructure:** docker-compose (8 services), Caddyfile (TLS, per-module routing + center-based forward-auth for all module routes), Postgres init (5 schemas), `.env.example`.
 
-**Center:** Auth (OIDC via Pocket-ID), dashboard (widgets + ordering), launcher, admin registry, internal API (service discovery, JWT minting, JWKS), demo widget routes. `center.users` table — upserts on every OIDC login so all users are tracked automatically.
+**Center:** Auth (OIDC via Pocket-ID), dashboard (widgets + ordering), launcher, admin registry, internal API (service discovery, JWT minting, JWKS), demo widget routes. `center.users` table — upserts on every OIDC login so all users are tracked automatically. Forward-auth endpoints: `GET /api/auth/verify` (required) and `GET /api/auth/identify` (optional/guest).
 
 **SDK (`packages/sdk-ts/`) v0.2:**
 - `call`, `verifyServiceToken`, `verifyToken`: service-to-service HTTP with token caching.
@@ -164,14 +196,16 @@ sudo nginx -t && sudo systemctl reload nginx
 
 **Manhwa module (`modules/manhwa/`):** Python FastAPI, scraper, catalog, reading list, widget, service-token auth.
 
-**Us module (`modules/us/`):**
-- Checklists: list (pinned + active + archived), detail with items (complete/uncomplete), add/delete, pin/archive/duplicate, comments.
-- Wishlists: quick-add via URL (OpenGraph scrape, 3s timeout), manual add, status transitions (wanted/bought/received/passed), reactions (♡ idempotent per user), comments, edit/delete.
-- Places: quick-add via URL or Maps link (name-parsed from URL), manual add, status (wantToGo/visited/passed), visit log (date/rating/notes), reactions, comments.
-- Activity feed: all section writes logged, read-time 10-min coalescing, last-30-days view.
-- Search: `ILIKE` across all sections, grouped results.
-- Widget: 7-day activity count + latest entry in plain English.
-- Manifest: `docs/modules/us-manifest.yaml` (paste into Admin → Modules to register).
+**Us module (`modules/us/`) v2:**
+- Checklists: list (pinned + active + archived + templates), detail with items (complete/uncomplete), add/delete, pin/archive/duplicate, save-as-template, comments. Template section + "Start from template" in new-checklist form.
+- Wishlists: quick-add via URL (scrapes title, description, image, **price, currency, extra product images**), manual add, status transitions, reactions, comments, edit/delete. **Budget totals** (Wanted/Bought/Received) above tabs. **Surprise mode** hides items from partner (gift idea).
+- Places: quick-add via URL or **Google Maps link** (short-link redirect + lat/lng parsing + Nominatim reverse-geocode), **Map Search** (Nominatim autocomplete → one-click add), manual add. **Leaflet map view** at `/places/map`. **Mini-map** on detail page. Visit log extended with **mood picker** (😍😊😐😕🚫) and **photo URLs**.
+- **Date planner**: CRUD for date plans linking a place + checklist + date. Inline checklist toggle from plan detail. Widget surfaces upcoming plans (within 3 days).
+- **Stats page**: year-to-date + all-time metrics, budget totals, status distributions, 12-month activity bar chart.
+- **Whose turn tracker**: per-category turn flag, "Pass" button on each list page.
+- **Smart nudges**: 6-hour background checks via `setInterval` in `instrumentation.ts`; notifies via Center notification API.
+- Activity feed, Search, Widget (all from v1).
+- Manifest: `docs/modules/us-manifest.yaml`.
 
 **Pantry module (`modules/pantry/`):**
 - Inventory view + manual edit + delete (✕ button on hover).
@@ -185,13 +219,16 @@ sudo nginx -t && sudo systemctl reload nginx
 **Meals module (`modules/meals/`):**
 - Suggestions page: weighted-random algorithm (pinned ×3, pantry ×2/1.5, rating × rating/3, recent-cook exclusion).
 - Recipe library with filters.
-- Recipe detail: servings scaler, pantry availability dots, estimated cost, step list.
+- Recipe detail: servings scaler, pantry availability dots, estimated cost, step list. OG image + title metadata for link previews. Share button (Web Share API / clipboard fallback).
 - URL import: schema.org JSON-LD parser, handles HowToStep/string/blob shapes.
 - Add recipe form: structured steps, ingredients with quantity/unit, meal types, tags.
 - Cook mode: timed session, step-by-step, rating + notes on finish, resume from any device, cancel.
 - On finish: publishes `meals.recipe.cooked` (stream) with scaled ingredient quantities.
 - Pantry cache invalidation: subscribes to `pantry.inventory.changed` (pubsub).
 - Dashboard widget: top suggestion for tonight.
+- **Public access:** no login required. Guests (`guest@lovey.tv`) can view and cook but cannot add/import/edit recipes. Logged-in users see personalized history and sessions.
+- **Cook history page** (`/meals/history`): all cooked sessions with thumbnail, date, rating, notes. Linked from nav.
+- **Recipe edit thumbnail**: edit page loads, previews, and saves `thumbnailUrl`.
 
 ## What's In Progress
 
@@ -208,9 +245,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Open Questions for the User
 
-1. **Forward-auth sign-off** — confirm `Remote-Email` is being injected by Pocket-ID by checking that the us module shows your email correctly in activity entries. If not, verify the endpoint path in `docs/operations/pocket-id-setup.md` Step 4.
-2. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
-3. **FinGuide URL** — `docs/modules/finguide-manifest.yaml` has a placeholder URL; fill in the real one before registering.
+1. **MU CSS selector** — manhwa scraper uses a CSS module class that may change on MU frontend rebuild.
+2. **FinGuide URL** — `docs/modules/finguide-manifest.yaml` has a placeholder URL; fill in the real one before registering.
+3. **ops doc update** — `docs/operations/pocket-id-setup.md` Step 4 still describes the old pocket-id forward-auth endpoint. Should be updated to describe the center-based endpoint instead.
 
 ## Shared top bar — built
 
@@ -221,6 +258,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Recent Decisions
 
+- **D30:** Center-based forward-auth — Pocket-ID v2 has no usable forward-auth endpoint (`/api/auth/verify` returns 404). Forward-auth now points to center:3000 which validates the NextAuth session. Two variants: required (`/api/auth/verify`) and optional/guest (`/api/auth/identify`). Pocket-ID is still the OIDC provider for login; only the per-request identity check moved to the center.
+- **D31:** Meals module is public — unauthenticated users get `guest@lovey.tv` identity and view-only access. Write operations (add/import/edit/delete) require a real identity at both page and API level.
 - **D25:** SDK v0.2 — streams implemented in Phase 5 (first stream use case). Consumer group name = subscribing module ID. DLQ after 5 failures at `lc:dlq:{moduleId}`.
 - **D26:** npm workspaces (root `package.json`) — allows modules to reference `@lc/sdk` source without pre-build. Consuming modules use `transpilePackages: ["@lc/sdk"]`.
 - **D27:** Next.js modules use `basePath` (not Caddy prefix-stripping) — Caddy routes `/meals*` → `meals:3000` without stripping; `basePath: "/meals"` in `next.config.ts` handles URL generation. `internal_api` in manifests is `http://meals:3000/meals` (basePath only, no `/api` suffix — the SDK and widget fetcher append the path themselves).
@@ -232,7 +271,6 @@ sudo nginx -t && sudo systemctl reload nginx
 - `meals.recipe.cooked` stream consumer in pantry starts in `instrumentation.ts` with `"$"` offset (only new messages). On first deploy, any events published before the consumer group was created are missed. Re-subscribe with offset `"0"` if you want to replay historical events.
 - Suggestion cache invalidation deletes ALL cache rows on any pantry change — fine for one user, overkill if two users have different caches. Scope deletion by user in v1.1.
 - Purchase form in pantry doesn't validate unit mismatch between items — user can log "flour in kg" then "flour in g" as two separate inventory rows. The normalization handles this at query time but inventory counts can diverge. UI warning planned for v0.2.
-- No edit page for recipes in v0.1 UI (only Add/Import). API supports PUT. Edit page exists at `/recipes/[id]/edit` — confirm it's wired up in nav.
 - `packages/sdk-ts/package.json` exports point to `src/index.ts` — requires `transpilePackages` in consumers. Third-party modules using the SDK as an installed npm package will need a pre-built dist. Build script is still present; add `"prepare": "npm run build"` if publishing.
 
 ---

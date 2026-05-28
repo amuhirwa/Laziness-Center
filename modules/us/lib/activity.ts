@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { activity } from "@/db/schema"
 
 type Kind = "added" | "status-changed" | "reacted" | "completed" | "commented" | "visited" | "archived"
-type Section = "checklist" | "wishlist" | "places"
+type Section = "checklist" | "wishlist" | "places" | "plans"
 
 export async function logActivity(opts: {
   kind: Kind

@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as {
-    name?: string; location?: string; description?: string; url?: string
-    imageUrl?: string; category?: string
+    name?: string; location?: string; address?: string; description?: string; url?: string
+    imageUrl?: string; category?: string; lat?: number; lng?: number
   }
   if (!body.name?.trim()) return NextResponse.json({ error: "name required" }, { status: 400 })
 
@@ -30,10 +30,13 @@ export async function POST(request: NextRequest) {
   const [row] = await db.insert(places).values({
     name: body.name.trim(),
     location: body.location?.trim() ?? null,
+    address: body.address?.trim() ?? null,
     description: body.description?.trim() ?? null,
     url: body.url ?? null,
     imageUrl: body.imageUrl ?? null,
     category: body.category ?? null,
+    lat: body.lat != null ? String(body.lat) : null,
+    lng: body.lng != null ? String(body.lng) : null,
     addedBy: actor,
   }).returning()
 

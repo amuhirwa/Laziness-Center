@@ -9,7 +9,7 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function POST(request: NextRequest, { params }: Params) {
   const { id } = await params
-  const body = await request.json() as { visitedAt?: string; rating?: number; notes?: string }
+  const body = await request.json() as { visitedAt?: string; rating?: number; notes?: string; mood?: string; photoUrls?: string[] }
 
   const actor = getUserId(request.headers)
   const [row] = await db.insert(placeVisits).values({
@@ -17,6 +17,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     visitedAt: body.visitedAt ? new Date(body.visitedAt) : new Date(),
     rating: body.rating ?? null,
     notes: body.notes?.trim() ?? null,
+    mood: body.mood ?? null,
+    photoUrls: body.photoUrls?.filter(Boolean) ?? [],
     loggedBy: actor,
   }).returning()
 

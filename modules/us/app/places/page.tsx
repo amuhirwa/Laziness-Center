@@ -5,6 +5,7 @@ import { places, reactions } from "@/db/schema"
 import { desc, eq } from "drizzle-orm"
 import Link from "next/link"
 import PlacesActions from "./places-actions"
+import TurnBanner from "@/app/components/turn-banner"
 
 const STATUSES = ["wantToGo", "visited", "passed"] as const
 type Status = typeof STATUSES[number]
@@ -28,6 +29,7 @@ export default async function PlacesPage({ searchParams }: Props) {
     <div className="space-y-5">
       <h1 className="font-semibold">Places</h1>
 
+      <TurnBanner category="places" />
       <PlacesActions />
 
       <div className="flex gap-1 flex-wrap">

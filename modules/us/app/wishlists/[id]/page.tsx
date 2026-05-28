@@ -32,12 +32,20 @@ export default async function WishlistItemPage({ params }: Props) {
   const userId = getUserId(await headers())
   const hasReacted = reacts.some((r) => r.reactor === userId)
 
+  // Find partner email from recent activity (the user who isn't the current user)
+  const { activity } = await import("@/db/schema")
+  const { desc: descOrder } = await import("drizzle-orm")
+  const recentActors = await db.select({ actor: activity.actor })
+    .from(activity).orderBy(descOrder(activity.createdAt)).limit(50)
+  const distinctActors = [...new Set(recentActors.map((r) => r.actor))].filter((a) => a !== "guest@lovey.tv")
+  const partnerEmail = distinctActors.find((a) => a !== userId) ?? null
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <Link href="/wishlists" className="text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">← Back</Link>
       </div>
-      <WishlistItemDetail item={item} reactions={reacts} initialComments={commentRows} hasReacted={hasReacted} />
+      <WishlistItemDetail item={item} reactions={reacts} initialComments={commentRows} hasReacted={hasReacted} currentUserId={userId} partnerEmail={partnerEmail} />
     </div>
   )
 }

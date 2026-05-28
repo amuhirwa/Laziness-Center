@@ -2,9 +2,10 @@ export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
 import { wishlistItems, reactions } from "@/db/schema"
-import { and, desc, eq } from "drizzle-orm"
+import { desc, eq, isNotNull, sql } from "drizzle-orm"
 import Link from "next/link"
 import WishlistActions from "./wishlist-actions"
+import TurnBanner from "@/app/components/turn-banner"
 
 const STATUSES = ["wanted", "bought", "received", "passed"] as const
 type Status = typeof STATUSES[number]
@@ -19,6 +20,34 @@ export default async function WishlistPage({ searchParams }: Props) {
     .where(eq(wishlistItems.status, status))
     .orderBy(desc(wishlistItems.isPinned), desc(wishlistItems.createdAt))
 
+  // Budget totals (all statuses)
+  const budgetRows = await db
+    .select({
+      status: wishlistItems.status,
+      currency: wishlistItems.currency,
+      total: sql<string>`COALESCE(SUM(price),0)`,
+    })
+    .from(wishlistItems)
+    .where(isNotNull(wishlistItems.price))
+    .groupBy(wishlistItems.status, wishlistItems.currency)
+
+  // Collapse to { status -> { currency -> total } }
+  const budgetMap: Record<string, Record<string, number>> = {}
+  for (const r of budgetRows) {
+    if (!budgetMap[r.status]) budgetMap[r.status] = {}
+    const cur = r.currency ?? "RWF"
+    budgetMap[r.status][cur] = (budgetMap[r.status][cur] ?? 0) + parseFloat(r.total)
+  }
+
+  function fmtBudget(statusKey: string) {
+    const m = budgetMap[statusKey]
+    if (!m) return null
+    return Object.entries(m)
+      .filter(([, v]) => v > 0)
+      .map(([cur, val]) => `${cur} ${val.toLocaleString()}`)
+      .join(" + ")
+  }
+
   // Reaction counts
   const reactCounts = await db.select({ itemId: reactions.itemId }).from(reactions)
     .where(eq(reactions.itemType, "wishlist"))
@@ -31,7 +60,18 @@ export default async function WishlistPage({ searchParams }: Props) {
         <h1 className="font-semibold">Wishlist</h1>
       </div>
 
+      <TurnBanner category="wishlists" />
       <WishlistActions />
+
+      {/* Budget summary */}
+      {Object.keys(budgetMap).length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+          {[["wanted", "Wanted"], ["bought", "Bought"], ["received", "Received"]].map(([key, label]) => {
+            const fmt = fmtBudget(key)
+            return fmt ? <span key={key}>{label}: <span className="text-neutral-700 dark:text-neutral-300 font-medium">{fmt}</span></span> : null
+          })}
+        </div>
+      )}
 
       {/* Status tabs */}
       <div className="flex gap-1">
