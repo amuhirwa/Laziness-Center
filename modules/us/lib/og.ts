@@ -60,15 +60,27 @@ function extractOffer(product: Record<string, unknown>): { price: string | null;
   }
 }
 
-export async function scrapeOG(url: string): Promise<OGResult> {
+export async function scrapeOG(inputUrl: string): Promise<OGResult> {
   const empty: OGResult = { title: null, description: null, imageUrl: null, price: null, currency: null, extraImages: [] }
   try {
+    // AliExpress ignores Accept-Language and uses IP geolocation.
+    // Force English via their locale cookie and language URL param.
+    let url = inputUrl
+    const extraHeaders: Record<string, string> = {}
+    if (inputUrl.includes("aliexpress.com")) {
+      const u = new URL(inputUrl)
+      u.searchParams.set("language", "en_US")
+      url = u.toString()
+      extraHeaders["Cookie"] = "intl_locale=en_US; aep_usuc_f=site=glo&c_tp=USD&ups_d=update_date%3D2024-01-01; xman_us_f=x_locale=en_US"
+    }
+
     const res = await fetch(url, {
       signal: AbortSignal.timeout(5000),
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
+        ...extraHeaders,
       },
     })
     if (!res.ok) return empty

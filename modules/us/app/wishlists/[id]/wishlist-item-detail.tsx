@@ -34,6 +34,8 @@ export default function WishlistItemDetail({
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(item.title)
   const [editDesc, setEditDesc] = useState(item.description ?? "")
+  const [editPrice, setEditPrice] = useState(item.price ?? "")
+  const [editCurrency, setEditCurrency] = useState(item.currency ?? "RWF")
   const router = useRouter()
 
   const isOwner = item.addedBy === currentUserId
@@ -80,7 +82,12 @@ export default function WishlistItemDetail({
     const res = await fetch(base, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editTitle, description: editDesc }),
+      body: JSON.stringify({
+        title: editTitle,
+        description: editDesc,
+        price: editPrice || null,
+        currency: editCurrency || null,
+      }),
     })
     if (res.ok) {
       const updated = await res.json() as Item
@@ -131,10 +138,20 @@ export default function WishlistItemDetail({
       {editing ? (
         <form onSubmit={saveEdit} className="space-y-3">
           <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
+            placeholder="Title"
             className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400" />
-          <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3}
+          <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2}
             placeholder="Description…"
             className="w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400 resize-none" />
+          <div className="flex gap-2">
+            <input value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}
+              placeholder="RWF"
+              className="w-20 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400" />
+            <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)}
+              placeholder="Price"
+              type="number" min="0" step="any"
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400" />
+          </div>
           <div className="flex gap-2">
             <button type="submit" className="text-sm px-4 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium hover:opacity-90">Save</button>
             <button type="button" onClick={() => setEditing(false)} className="text-sm px-4 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">Cancel</button>
