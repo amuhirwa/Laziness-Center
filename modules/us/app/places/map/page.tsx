@@ -3,10 +3,8 @@ export const dynamic = "force-dynamic"
 import { db } from "@/db"
 import { places } from "@/db/schema"
 import { isNotNull, and } from "drizzle-orm"
-import nextDynamic from "next/dynamic"
 import type { MapMarker } from "../leaflet-map"
-
-const LeafletMap = nextDynamic(() => import("../leaflet-map"), { ssr: false, loading: () => <div className="h-[400px] rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" /> })
+import MapClient from "./map-client"
 
 export default async function PlacesMapPage() {
   const rows = await db.select({
@@ -45,13 +43,15 @@ export default async function PlacesMapPage() {
 
       {markers.length === 0 ? (
         <div className="h-64 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-          <p className="text-sm text-neutral-400">No places with coordinates yet.<br />Add places via URL or Map Search to get coordinates.</p>
+          <p className="text-sm text-neutral-400 text-center">No places with coordinates yet.<br />Add places via URL or Map Search to get coordinates.</p>
         </div>
       ) : (
-        <LeafletMap markers={markers} height="480px" />
+        <MapClient markers={markers} />
       )}
 
-      <p className="text-xs text-neutral-400 dark:text-neutral-500">{markers.length} place{markers.length !== 1 ? "s" : ""} on the map. Add via URL or Map Search to get coordinates for others.</p>
+      <p className="text-xs text-neutral-400 dark:text-neutral-500">
+        {markers.length} place{markers.length !== 1 ? "s" : ""} on the map. Add via URL or Map Search to get coordinates for others.
+      </p>
     </div>
   )
 }
